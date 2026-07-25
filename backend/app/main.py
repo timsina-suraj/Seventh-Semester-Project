@@ -62,6 +62,16 @@ def _ensure_new_columns():
             conn.execute(
                 text("ALTER TABLE users ADD COLUMN reset_otp_expires_at DATETIME")
             )
+    if "login_otp" not in existing_columns:
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN login_otp VARCHAR(64)")
+            )
+    if "login_otp_expires_at" not in existing_columns:
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE users ADD COLUMN login_otp_expires_at DATETIME")
+            )
 
 
 app.include_router(auth.router)

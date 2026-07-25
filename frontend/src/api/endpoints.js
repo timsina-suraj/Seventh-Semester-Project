@@ -3,12 +3,14 @@ import client from "./client";
 // -- Auth --------------------------------------------------------------
 export const login = (email, password) => {
   const form = new URLSearchParams();
-  form.append("username", email); // OAuth2 expects the parameter to be named 'username'
+  form.append("username", email);
   form.append("password", password);
   return client.post("/auth/login", form, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
 };
+export const preLogin = (data) => client.post("/auth/pre-login", data);
+export const loginWithOTP = (data) => client.post("/auth/login-with-otp", data);
 export const me = () => client.get("/auth/me");
 export const registerUser = (payload) => client.post("/auth/register", payload);
 export const changePassword = (data) => client.post("/auth/change-password", data);

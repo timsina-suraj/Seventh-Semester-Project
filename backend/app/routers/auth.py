@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.doctor import Doctor
 from app.models.user import User, VALID_ROLES
-from app.schemas.auth import ChangePasswordRequest, Token, UserCreate, UserRead, ForgotPasswordRequest, ResetPasswordWithOTPRequest
+from app.schemas.auth import ChangePasswordRequest, Token, UserCreate, UserRead, ForgotPasswordRequest, ResetPasswordWithOTPRequest, PreLoginRequest, PreLoginResponse, LoginWithOTPRequest
 from app.services.email_service import send_otp_email, send_password_reset_otp_email
 from app.security.auth import (
     create_access_token,
@@ -39,7 +39,8 @@ def register(
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already exists")
 
-    temp_password = generate_temp_password()
+    import secrets
+    temp_password = secrets.token_urlsafe(32)
 
     user = User(
         email=payload.email,
@@ -66,8 +67,7 @@ def register(
     db.commit()
     db.refresh(user)
     
-    # Send the OTP to the user's email instead of returning it
-    send_otp_email(user.email, temp_password)
+    # No email is sent here. OTP will be generated on first login.
     
     return user
 
@@ -169,3 +169,75 @@ def reset_password(
     db.commit()
     
     return {"detail": "Password successfully reset"}
+
+
+@router.post("/pre-login", response_model=PreLoginResponse)
+def pre_login(
+    payload: PreLoginRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        # Prevent user enumeration by pretending standard password is required
+        return {"requires_otp": False, "requires_password": True}
+        
+    if user.must_change_password:
+        otp = generate_temp_password()
+        user.login_otp = hash_password(otp)
+        
+        from datetime import datetime, timedelta, timezone
+        user.login_otp_expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+        db.commit()
+        
+        send_otp_email(user.email, otp)
+        return {"requires_otp": True, "requires_password": False}
+        
+    return {"requires_otp": False, "requires_password": True}
+
+
+@router.post("/login-with-otp", response_model=Token)
+def login_with_otp(
+    payload: LoginWithOTPRequest,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or OTP",
+        )
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
+        
+    if not user.must_change_password:
+        raise HTTPException(status_code=400, detail="User has already set a password. Use standard login.")
+        
+    if not user.login_otp or not user.login_otp_expires_at:
+        raise HTTPException(status_code=400, detail="No OTP requested")
+        
+    from datetime import datetime, timezone
+    expiry = user.login_otp_expires_at
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+        
+    if datetime.now(timezone.utc) > expiry:
+        raise HTTPException(status_code=400, detail="OTP has expired")
+        
+    if not verify_password(payload.otp, user.login_otp):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or OTP",
+        )
+        
+    # Clear OTP after successful login
+    user.login_otp = None
+    user.login_otp_expires_at = None
+    db.commit()
+    
+    token = create_access_token(subject=user.email, role=user.role)
+    return Token(
+        access_token=token,
+        role=user.role,
+        email=user.email,
+        must_change_password=user.must_change_password,
+    )

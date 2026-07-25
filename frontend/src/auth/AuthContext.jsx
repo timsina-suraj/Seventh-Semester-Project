@@ -31,6 +31,16 @@ export function AuthProvider({ children }) {
     return data;
   };
 
+  const loginWithOTP = async (email, otp) => {
+    const { data } = await api.loginWithOTP({ email, otp });
+    localStorage.setItem(KEY_TOKEN, data.access_token);
+    localStorage.setItem(KEY_ROLE, data.role);
+    localStorage.setItem(KEY_EMAIL, data.email);
+    localStorage.setItem(KEY_MCP, String(!!data.must_change_password));
+    setUser({ email: data.email, role: data.role, mustChangePassword: !!data.must_change_password });
+    return data;
+  };
+
   const clearMustChangePassword = () => {
     localStorage.setItem(KEY_MCP, "false");
     setUser((u) => (u ? { ...u, mustChangePassword: false } : u));
@@ -45,7 +55,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, clearMustChangePassword }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithOTP, logout, clearMustChangePassword }}>
       {children}
     </AuthContext.Provider>
   );

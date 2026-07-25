@@ -22,4 +22,6 @@ class User(Base):
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=False)
     reset_otp: Mapped[str | None] = mapped_column(String(64), nullable=True)
     reset_otp_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    login_otp: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    login_otp_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_date: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))

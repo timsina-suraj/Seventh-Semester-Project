@@ -54,3 +54,14 @@ class ResetPasswordWithOTPRequest(BaseModel):
     email: EmailStr
     otp: str
     new_password: str = Field(min_length=8, max_length=128)
+
+class PreLoginRequest(BaseModel):
+    email: EmailStr
+
+class PreLoginResponse(BaseModel):
+    requires_otp: bool
+    requires_password: bool
+
+class LoginWithOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str

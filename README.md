@@ -1,4 +1,4 @@
-# Secure AI-Based Hospital Management System (HMMS)
+# MediShield Intelligent Hospital Management System
 
 A hospital management system for Nepal with an integrated dengue-outbreak
 prediction and patient-diagnosis AI layer, built per the project spec:

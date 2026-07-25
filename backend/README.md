@@ -22,7 +22,7 @@ No code changes required — just point `DATABASE_URL` at MySQL, e.g. in a `.env
 file (see `.env.example`):
 
 ```
-DATABASE_URL=mysql+pymysql://hmms_user:password@localhost:3306/hmms
+DATABASE_URL=mysql+pymysql://user:password@localhost:3306/hmms
 ```
 
 Then re-run `python seed.py` to create tables + seed data against MySQL.

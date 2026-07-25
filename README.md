@@ -5,7 +5,7 @@ prediction and patient-diagnosis AI layer, built per the project spec:
 
 - **Backend**: FastAPI + SQLAlchemy (SQLite for local dev, MySQL-ready via one env var)
 - **Security**: JWT auth, role-based access control, bcrypt password hashing, AES-256-GCM field encryption for sensitive patient data
-- **ML**: Decision Tree / Random Forest / Gradient-Boosted ("XGBoost-style") regressors + classifiers, implemented **from scratch** on numpy — no scikit-learn/xgboost — trained on the two real datasets in `backend/app/ml/data/`
+- **ML**: Decision Tree / Random Forest / Gradient-Boosted ("XGBoost-style") regressors + classifiers, implemented **from scratch** on numpy — no scikit-learn/xgboost — trained on the two  datasets in `backend/app/ml/data/`
 - **Frontend**: React + Vite, role-aware dashboards, Recharts model-metric charts, a Leaflet-based Nepal district risk map
 
 ## Quick start
@@ -16,7 +16,7 @@ prediction and patient-diagnosis AI layer, built per the project spec:
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python seed.py                          # creates hmms.db + admin user + sample data
+python seed.py                          # creates MediShield_db.db + admin user + sample data
 python -m app.ml.train_dengue_prediction # trains + persists the regression models
 python -m app.ml.train_diagnosis         # trains + persists the classification models
 uvicorn app.main:app --reload            # http://127.0.0.1:8000  (docs at /docs)

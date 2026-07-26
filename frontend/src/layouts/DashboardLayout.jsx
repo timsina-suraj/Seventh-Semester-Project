@@ -9,16 +9,20 @@ const NAV_BY_ROLE = {
     { to: "/alerts", label: "🔔 Alerts" },
     { to: "/patients", label: "🧑‍⚕️ Patients" },
     { to: "/doctors", label: "👨‍⚕️ Doctors" },
-    { to: "/receptionists", label: "💁 Receptionists" },
     { to: "/appointments", label: "📅 Appointments" },
+    { to: "/prescriptions", label: "💉 Prescriptions" },
+    { to: "/medical-records", label: "🗂️ Medical Records" },
     { to: "/pharmacy", label: "💊 Pharmacy" },
     { to: "/users", label: "👥 Users" },
+    { to: "/logs", label: "🧾 Logs" },
   ],
   doctor: [
     { to: "/", label: "🏠 Dashboard", end: true },
     { to: "/patients", label: "🧑‍⚕️ Patients" },
     { to: "/diagnosis", label: "🔬 Diagnosis & Record" },
+    { to: "/prescriptions", label: "💉 Prescriptions" },
     { to: "/appointments", label: "📅 Appointments" },
+    { to: "/doctor/availability", label: "🗓️ My Availability" },
   ],
   receptionist: [
     { to: "/", label: "🏠 Dashboard", end: true },
@@ -28,6 +32,11 @@ const NAV_BY_ROLE = {
     { to: "/appointments/book", label: "📆 Book Appointment" },
     { to: "/pharmacy", label: "💊 Pharmacy" },
   ],
+  nurse: [
+    { to: "/", label: "🏠 Dashboard", end: true },
+    { to: "/prescriptions", label: "💉 Prescriptions" },
+  ],
+  lab_technician: [{ to: "/", label: "🏠 Dashboard", end: true }],
   patient: [
     { to: "/", label: "🏠 Dashboard", end: true },
     { to: "/my-profile", label: "👤 My Profile" },
@@ -39,7 +48,9 @@ const NAV_BY_ROLE = {
 const ROLE_LABELS = {
   admin: "Administrator",
   doctor: "Doctor",
+  nurse: "Nurse",
   receptionist: "Receptionist",
+  lab_technician: "Lab Technician",
   patient: "Patient",
 };
 
@@ -64,7 +75,7 @@ export default function DashboardLayout() {
         </div>
         <div className="top-header-user">
           <span className="top-header-role-badge">{ROLE_LABELS[user.role] || user.role}</span>
-          <span className="top-header-username">{user.email}</span>
+          <span className="top-header-username">{user.fullName || user.email}</span>
           <button className="top-header-btn" onClick={() => navigate("/change-password")}>
             🔑 Change Password
           </button>

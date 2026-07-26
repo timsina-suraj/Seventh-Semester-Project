@@ -2,7 +2,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/endpoints";
 
-const EMPTY_FORM = { name: "", email: "", address: "", phone: "", age: "", gender: "Female", district: "" };
+const EMPTY_FORM = {
+  full_name: "",
+  email: "",
+  date_of_birth: "",
+  gender: "Female",
+  blood_group: "Unknown",
+  district: "",
+  province: "",
+  municipality: "",
+  phone: "",
+  emergency_contact: "",
+  allergies: "",
+};
+
+const BLOOD_GROUPS = ["Unknown", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export default function RegisterPatient() {
   const navigate = useNavigate();
@@ -19,8 +33,8 @@ export default function RegisterPatient() {
     setError("");
     setLastCreated(null);
     try {
-      const { data } = await api.createPatient({ ...form, age: Number(form.age) });
-      setLastCreated({ email: data.login_email, temporary_password: data.temporary_password });
+      const { data } = await api.createPatient(form);
+      setLastCreated({ email: data.login_email, patientNumber: data.patient_number });
       setForm(EMPTY_FORM);
     } catch (err) {
       setError(
@@ -51,22 +65,19 @@ export default function RegisterPatient() {
             style={{ background: "#eff6ff", border: "1px solid #bfdbfe", marginBottom: 20 }}
           >
             <div className="section-title" style={{ marginTop: 0 }}>
-              ✅ Patient account created
+              ✅ Patient registered — {lastCreated.patientNumber}
             </div>
             <p style={{ fontSize: 13, margin: "4px 0" }}>
-              Share this one-time password with <strong>{lastCreated.email}</strong> — it will not
-              be shown again. They'll be required to set their own password on first login.
+              A registration email has been sent to <strong>{lastCreated.email}</strong>. They'll receive a
+              one-time login code the first time they sign in with this email.
             </p>
-            <code style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1 }}>
-              {lastCreated.temporary_password}
-            </code>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Full name</label>
-            <input name="name" value={form.name} onChange={handleChange} required />
+            <input name="full_name" value={form.full_name} onChange={handleChange} required />
           </div>
           <div className="form-group">
             <label>Email</label>
@@ -74,16 +85,8 @@ export default function RegisterPatient() {
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Age</label>
-              <input
-                type="number"
-                name="age"
-                min={0}
-                max={120}
-                value={form.age}
-                onChange={handleChange}
-                required
-              />
+              <label>Date of birth</label>
+              <input type="date" name="date_of_birth" value={form.date_of_birth} onChange={handleChange} required />
             </div>
             <div className="form-group">
               <label>Gender</label>
@@ -95,6 +98,14 @@ export default function RegisterPatient() {
             </div>
           </div>
           <div className="form-group">
+            <label>Blood group</label>
+            <select name="blood_group" value={form.blood_group} onChange={handleChange}>
+              {BLOOD_GROUPS.map((bg) => (
+                <option key={bg}>{bg}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
             <label>District</label>
             <input
               name="district"
@@ -104,13 +115,29 @@ export default function RegisterPatient() {
               placeholder="e.g. Kathmandu"
             />
           </div>
-          <div className="form-group">
-            <label>Phone</label>
-            <input name="phone" value={form.phone} onChange={handleChange} placeholder="98XXXXXXXX" />
+          <div className="form-row">
+            <div className="form-group">
+              <label>Province</label>
+              <input name="province" value={form.province} onChange={handleChange} placeholder="e.g. Bagmati" />
+            </div>
+            <div className="form-group">
+              <label>Municipality</label>
+              <input name="municipality" value={form.municipality} onChange={handleChange} placeholder="e.g. Baneshwor" />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>Phone</label>
+              <input name="phone" value={form.phone} onChange={handleChange} placeholder="98XXXXXXXX" />
+            </div>
+            <div className="form-group">
+              <label>Emergency contact</label>
+              <input name="emergency_contact" value={form.emergency_contact} onChange={handleChange} placeholder="98XXXXXXXX" />
+            </div>
           </div>
           <div className="form-group">
-            <label>Address</label>
-            <input name="address" value={form.address} onChange={handleChange} />
+            <label>Allergies</label>
+            <input name="allergies" value={form.allergies} onChange={handleChange} placeholder="e.g. Penicillin (optional)" />
           </div>
           {error && <div className="error-text">{String(error)}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>

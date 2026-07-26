@@ -41,7 +41,7 @@ export default function RiskMap() {
         </div>
       )}
 
-      {/* {points.length > 0 && (
+      {points.length > 0 && (
         <div className="card">
           <div className="section-title">Districts by predicted risk</div>
           <table>
@@ -65,7 +65,7 @@ export default function RiskMap() {
             </tbody>
           </table>
         </div>
-      )} */}
+      )}
     </div>
   );
 }

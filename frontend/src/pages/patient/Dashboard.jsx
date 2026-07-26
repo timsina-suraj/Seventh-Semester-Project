@@ -24,8 +24,8 @@ export default function PatientDashboard() {
   }, []);
 
   const upcomingAppointments = appointments
-    .filter((a) => a.status === "scheduled")
-    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at));
+    .filter((a) => a.status === "Pending" || a.status === "Confirmed")
+    .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
 
   const latestRecord = records[records.length - 1];
 
@@ -33,7 +33,7 @@ export default function PatientDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Welcome, {patient?.name || user.email} 🙋</h1>
+          <h1>Welcome, {patient?.full_name || user.email} 🙋</h1>
         </div>
       </div>
 
@@ -62,12 +62,12 @@ export default function PatientDashboard() {
           {patient ? (
             <table>
               <tbody>
-                <tr><td style={{ color: "var(--color-text-muted)", width: 120 }}>Name</td><td>{patient.name}</td></tr>
-                <tr><td style={{ color: "var(--color-text-muted)" }}>Age</td><td>{patient.age}</td></tr>
+                <tr><td style={{ color: "var(--color-text-muted)", width: 120 }}>Patient #</td><td>{patient.patient_number}</td></tr>
+                <tr><td style={{ color: "var(--color-text-muted)" }}>Name</td><td>{patient.full_name}</td></tr>
                 <tr><td style={{ color: "var(--color-text-muted)" }}>Gender</td><td>{patient.gender}</td></tr>
+                <tr><td style={{ color: "var(--color-text-muted)" }}>Blood group</td><td>{patient.blood_group}</td></tr>
                 <tr><td style={{ color: "var(--color-text-muted)" }}>District</td><td>{patient.district}</td></tr>
                 <tr><td style={{ color: "var(--color-text-muted)" }}>Phone</td><td>{patient.phone || "—"}</td></tr>
-                <tr><td style={{ color: "var(--color-text-muted)" }}>Address</td><td>{patient.address || "—"}</td></tr>
               </tbody>
             </table>
           ) : (
@@ -86,16 +86,13 @@ export default function PatientDashboard() {
           {latestRecord ? (
             <div>
               <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginBottom: 8 }}>
-                {new Date(latestRecord.date).toLocaleString()}
+                {new Date(latestRecord.created_at).toLocaleString()}
               </p>
               <p><strong>Symptoms:</strong> {latestRecord.symptoms || "—"}</p>
-              <p><strong>Medical History:</strong> {latestRecord.medical_history || "—"}</p>
-              <p><strong>Clinical &amp; Medication History:</strong> {latestRecord.clinical_history || "—"}</p>
               <p><strong>Diagnosis:</strong> {latestRecord.diagnosis || "—"}</p>
-              <p><strong>Test Results:</strong> {latestRecord.lab_result || "—"}</p>
-              <p><strong>Tests Prescribed:</strong> {latestRecord.prescribed_tests || "—"}</p>
-              <p><strong>Medicines Prescribed:</strong> {latestRecord.prescription || "—"}</p>
-              <p><strong>Doctor Progress Note:</strong> {latestRecord.doctor_note || "—"}</p>
+              <p><strong>Treatment Plan:</strong> {latestRecord.treatment_plan || "—"}</p>
+              <p><strong>Follow-up Date:</strong> {latestRecord.follow_up_date || "—"}</p>
+              <p><strong>Doctor Progress Note:</strong> {latestRecord.notes || "—"}</p>
               {latestRecord.ml_dengue_predicted !== null && (
                 <p>
                   <strong>AI Screening:</strong>{" "}
@@ -134,7 +131,7 @@ export default function PatientDashboard() {
             <tbody>
               {upcomingAppointments.map((a) => (
                 <tr key={a.id}>
-                  <td>{new Date(a.scheduled_at).toLocaleString()}</td>
+                  <td>{new Date(a.appointment_date).toLocaleString()}</td>
                   <td>{a.reason || "—"}</td>
                   <td>
                     <span className="badge status-open">{a.status}</span>

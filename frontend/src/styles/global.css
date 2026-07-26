@@ -115,12 +115,6 @@ button {
   font-weight: 600;
 }
 
-.top-header-divider {
-  width: 1px;
-  height: 22px;
-  background: rgba(255,255,255,0.1);
-}
-
 .top-header-btn {
   background: rgba(255,255,255,0.06);
   color: #cbd5e1;
@@ -496,10 +490,10 @@ input:focus, select:focus, textarea:focus {
   margin-top: 6px;
 }
 
-.hint-text {
-  color: var(--color-text-muted);
-  font-size: 12px;
-  margin-top: 16px;
+.success-text {
+  color: var(--color-success);
+  font-size: 13px;
+  margin-top: 6px;
 }
 
 .leaflet-map-container {

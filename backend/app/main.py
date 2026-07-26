@@ -1,24 +1,34 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import Base, engine
-import app.models  # noqa: F401  (registers all models with Base.metadata)
+from app.core.exceptions import AppError
+from app.core.logging import configure_logging
+import app.models  # noqa: F401  (registers all models with Base.metadata, used by Alembic)
 from app.routers import (
     alerts,
+    analytics,
     appointments,
     auth,
     dashboard,
     doctors,
+    documents,
     lab,
+    logs,
     medical_records,
     ml_dengue,
     ml_diagnosis,
+    nurse,
+    patient_history,
     patients,
     pharmacy,
+    prescriptions,
+    staff,
     users,
-    analytics,
 )
+
+configure_logging()
 
 app = FastAPI(title=settings.app_name, version="1.0.0")
 
@@ -31,47 +41,9 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
-    _ensure_new_columns()
-
-
-def _ensure_new_columns():
-    """create_all() only creates missing tables, it never alters existing
-    ones. For this SQLite dev database we add any newly-introduced columns
-    here so upgrades don't require a manual migration step."""
-    from sqlalchemy import inspect, text
-
-    inspector = inspect(engine)
-    if "users" not in inspector.get_table_names():
-        return
-    existing_columns = {col["name"] for col in inspector.get_columns("users")}
-    if "must_change_password" not in existing_columns:
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0")
-            )
-    if "reset_otp" not in existing_columns:
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN reset_otp VARCHAR(64)")
-            )
-    if "reset_otp_expires_at" not in existing_columns:
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN reset_otp_expires_at DATETIME")
-            )
-    if "login_otp" not in existing_columns:
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN login_otp VARCHAR(64)")
-            )
-    if "login_otp_expires_at" not in existing_columns:
-        with engine.begin() as conn:
-            conn.execute(
-                text("ALTER TABLE users ADD COLUMN login_otp_expires_at DATETIME")
-            )
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 app.include_router(auth.router)
@@ -87,6 +59,12 @@ app.include_router(ml_dengue.router)
 app.include_router(ml_diagnosis.router)
 app.include_router(alerts.router)
 app.include_router(analytics.router)
+app.include_router(logs.router)
+app.include_router(prescriptions.router)
+app.include_router(patient_history.router)
+app.include_router(nurse.router)
+app.include_router(documents.router)
+app.include_router(staff.router)
 
 
 @app.get("/")

@@ -24,12 +24,15 @@ class Settings(BaseSettings):
     ] = "development"
 
     # --- Database ---
-    database_url: str = "sqlite:///./MediShield_db.db"
+    # Async driver, used by the running app (SQLAlchemy async engine).
+    #   SQLite : sqlite+aiosqlite:///./MediShield_db.db
+    #   MySQL  : mysql+aiomysql://user:password@localhost:3306/medishield_db
+    database_url: str = Field(..., validation_alias="DATABASE_URL")
 
     # --- JWT Auth ---
     jwt_secret_key: str = Field(..., validation_alias="JWT_SECRET_KEY")
-    jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 480
+    jwt_algorithm: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
+    access_token_expire_minutes: int = Field(default=480, validation_alias="ACCESS_TOKEN_EXPIRE_MINUTES")
 
     # --- AES-256-GCM Encryption ---
     encryption_key: str = Field(..., validation_alias="ENCRYPTION_KEY")
@@ -47,11 +50,46 @@ class Settings(BaseSettings):
     risk_threshold_high: float = 50
     risk_threshold_very_high: float = 150
 
-    # --- Mailtrap / Email ---
-    mailtrap_host: str = Field(..., validation_alias="MAILTRAP_HOST")
-    mailtrap_port: int =  Field(..., validation_alias="MAILTRAP_PORT")
-    mailtrap_user: str = Field(..., validation_alias="MAILTRAP_USER")
-    mailtrap_password: str = Field(..., validation_alias="MAILTRAP_PASSWORD")
+    # --- Email / SMTP ---
+    smtp_host: str = Field(default="localhost", validation_alias="SMTP_HOST")
+    smtp_port: int = Field(default=1025, validation_alias="SMTP_PORT")
+    smtp_user: str = Field(default="", validation_alias="SMTP_USER")
+    smtp_password: str = Field(default="", validation_alias="SMTP_PASSWORD")
+    smtp_use_tls: bool = Field(default=False, validation_alias="SMTP_USE_TLS")
+
+    # --- OTP / Security ---
+    otp_expire_minutes: int = Field(default=15, validation_alias="OTP_EXPIRE_MINUTES")
+    otp_max_attempts: int = Field(default=5, validation_alias="OTP_MAX_ATTEMPTS")
+    otp_resend_cooldown_seconds: int = Field(default=60, validation_alias="OTP_RESEND_COOLDOWN_SECONDS")
+
+    # Account lockout: after this many failed login attempts (password or
+    # first-login OTP) within the window, further attempts are rejected
+    # until enough of them age out of the sliding window — see
+    # AuthService._enforce_not_locked.
+    login_max_failed_attempts: int = Field(default=10, validation_alias="LOGIN_MAX_FAILED_ATTEMPTS")
+    login_lockout_window_minutes: int = Field(default=15, validation_alias="LOGIN_LOCKOUT_WINDOW_MINUTES")
+
+    # --- Logging ---
+    log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
+
+    # --- Appointments ---
+    # Spec doesn't state a slot length; this is how long a booked
+    # appointment blocks the doctor when checking for overlaps.
+    appointment_slot_minutes: int = Field(default=30, validation_alias="APPOINTMENT_SLOT_MINUTES")
+
+    # --- Documents (Module 12) ---
+    upload_dir: str = Field(default="uploads", validation_alias="UPLOAD_DIR")
+    max_upload_size_mb: int = Field(default=10, validation_alias="MAX_UPLOAD_SIZE_MB")
+
+    @property
+    def sync_database_url(self) -> str:
+        """A synchronous-driver equivalent of database_url, used only by
+        Alembic (migrations run sync even when the app runtime is async)."""
+        return (
+            self.database_url
+            .replace("sqlite+aiosqlite://", "sqlite://")
+            .replace("mysql+aiomysql://", "mysql+pymysql://")
+        )
 
     @field_validator("encryption_key")
     @classmethod

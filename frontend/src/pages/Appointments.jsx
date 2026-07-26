@@ -2,6 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext.jsx";
+import { nameById } from "../utils/lookups.js";
+
+const STATUS_BADGE = {
+  Pending: "status-open",
+  Confirmed: "status-acknowledged",
+  Completed: "status-resolved",
+  Cancelled: "status-acknowledged",
+  "No-show": "status-acknowledged",
+};
 
 export default function Appointments() {
   const { user } = useAuth();
@@ -12,12 +21,17 @@ export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("");
 
-  const load = () => api.listAppointments().then((res) => setAppointments(res.data));
+  const load = () =>
+    api.listAppointments({ status: statusFilter || undefined }).then((res) => setAppointments(res.data));
 
   useEffect(() => {
     load();
-    // Load name lookup maps for admin/receptionist/doctor
+  }, [statusFilter]);
+
+  useEffect(() => {
+    // Load name lookup maps for admin/receptionist/doctor (once)
     if (canAction) {
       api.listPatients().then((res) => setPatients(res.data));
     }
@@ -26,11 +40,8 @@ export default function Appointments() {
     }
   }, []);
 
-  const patientName = (id) => patients.find((p) => p.id === id)?.name || `#${id}`;
-  const doctorName = (id) => doctors.find((d) => d.id === id)?.full_name || `#${id}`;
-
   const handleStatus = async (appt, status) => {
-    await api.updateAppointment(appt.id, { status });
+    await api.updateAppointmentStatus(appt.id, status);
     load();
   };
 
@@ -48,8 +59,18 @@ export default function Appointments() {
       </div>
 
       <div className="card">
-        <div className="section-title">
-          {canManage ? `All appointments (${appointments.length})` : "My appointments"}
+        <div className="page-header" style={{ marginBottom: 12 }}>
+          <div className="section-title" style={{ margin: 0 }}>
+            {canManage ? `All appointments (${appointments.length})` : "My appointments"}
+          </div>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <option value="">All statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Completed">Completed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="No-show">No-show</option>
+          </select>
         </div>
         <table>
           <thead>
@@ -59,43 +80,41 @@ export default function Appointments() {
               <th>Doctor</th>
               <th>Reason</th>
               <th>Status</th>
+              <th></th>
               {canAction && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
             {appointments.map((a) => (
               <tr key={a.id}>
-                <td>{new Date(a.scheduled_at).toLocaleString()}</td>
-                <td>{canAction ? patientName(a.patient_id) : `#${a.patient_id}`}</td>
-                <td>{canManage ? doctorName(a.doctor_id) : (isDoctor ? "Me" : `#${a.doctor_id}`)}</td>
+                <td>{new Date(a.appointment_date).toLocaleString()}</td>
+                <td>{canAction ? nameById(patients, a.patient_id) : `#${a.patient_id}`}</td>
+                <td>{canManage ? nameById(doctors, a.doctor_id) : (isDoctor ? "Me" : `#${a.doctor_id}`)}</td>
                 <td>{a.reason || "—"}</td>
                 <td>
-                  <span
-                    className={`badge ${
-                      a.status === "scheduled"
-                        ? "status-open"
-                        : a.status === "completed"
-                        ? "status-resolved"
-                        : "status-acknowledged"
-                    }`}
-                  >
-                    {a.status}
-                  </span>
+                  <span className={`badge ${STATUS_BADGE[a.status] || "status-open"}`}>{a.status}</span>
+                </td>
+                <td>
+                  <button className="btn secondary" onClick={() => api.downloadAppointmentReceiptPdf(a.id)}>
+                    PDF
+                  </button>
                 </td>
                 {canAction && (
-                  <td style={{ display: "flex", gap: 6 }}>
-                    {a.status === "scheduled" && (
+                  <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {a.status === "Pending" && (
+                      <button className="btn secondary" onClick={() => handleStatus(a, "Confirmed")}>
+                        Confirm
+                      </button>
+                    )}
+                    {(a.status === "Pending" || a.status === "Confirmed") && (
                       <>
-                        <button
-                          className="btn secondary"
-                          onClick={() => handleStatus(a, "completed")}
-                        >
+                        <button className="btn secondary" onClick={() => handleStatus(a, "Completed")}>
                           Complete
                         </button>
-                        <button
-                          className="btn danger"
-                          onClick={() => handleStatus(a, "cancelled")}
-                        >
+                        <button className="btn secondary" onClick={() => handleStatus(a, "No-show")}>
+                          No-show
+                        </button>
+                        <button className="btn danger" onClick={() => handleStatus(a, "Cancelled")}>
                           Cancel
                         </button>
                       </>
@@ -106,7 +125,7 @@ export default function Appointments() {
             ))}
             {appointments.length === 0 && (
               <tr>
-                <td colSpan={canAction ? 6 : 5} className="empty-state">
+                <td colSpan={canAction ? 7 : 6} className="empty-state">
                   No appointments found.
                 </td>
               </tr>

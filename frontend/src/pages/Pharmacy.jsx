@@ -2,18 +2,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext.jsx";
+import useDebouncedValue from "../hooks/useDebouncedValue.js";
 
 export default function Pharmacy() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const canManage = user.role === "admin" || user.role === "receptionist";
   const [items, setItems] = useState([]);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search);
 
-  const load = () => api.listPharmacyItems().then((res) => setItems(res.data));
+  const load = () => api.listPharmacyItems(undefined, debouncedSearch || undefined).then((res) => setItems(res.data));
 
   useEffect(() => {
     load();
-  }, []);
+  }, [debouncedSearch]);
 
   const adjustStock = async (item, delta) => {
     await api.updatePharmacyItem(item.id, {
@@ -36,7 +39,16 @@ export default function Pharmacy() {
       </div>
 
       <div className="card">
-        <div className="section-title">Inventory ({items.length})</div>
+        <div className="page-header" style={{ marginBottom: 12 }}>
+          <div className="section-title" style={{ margin: 0 }}>Inventory ({items.length})</div>
+          <input
+            type="text"
+            placeholder="Search by medicine name..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ maxWidth: 260 }}
+          />
+        </div>
         <table>
           <thead>
             <tr>

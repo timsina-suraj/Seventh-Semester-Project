@@ -2,7 +2,7 @@ import requests
 from datetime import datetime
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.ml import train_dengue_prediction
@@ -157,11 +157,11 @@ def train_dengue_model():
     response_model=DistrictRiskPoint,
     dependencies=[Depends(require_role("admin", "doctor", "receptionist"))],
 )
-def predict_district(district: str, db: Session = Depends(get_db)):
+async def predict_district(district: str, db: AsyncSession = Depends(get_db)):
     artifact = _get_artifact()
     latest = artifact["latest_by_district"].get(district)
     lat_lon = (float(latest["Latitude"]), float(latest["Longitude"])) if latest else None
-    
+
     live_weather = {}
     if lat_lon:
         live_weather = _fetch_live_weather_bulk([lat_lon]).get(lat_lon, {})
@@ -172,7 +172,7 @@ def predict_district(district: str, db: Session = Depends(get_db)):
     predicted_cases = float(max(model.predict(X)[0], 0))
     risk_level = classify_risk(predicted_cases)
 
-    create_district_alert(db, district, predicted_cases, risk_level)
+    await create_district_alert(db, district, predicted_cases, risk_level)
 
     return DistrictRiskPoint(
         district=district,
@@ -189,7 +189,7 @@ def predict_district(district: str, db: Session = Depends(get_db)):
     response_model=list[DistrictRiskPoint],
     dependencies=[Depends(require_role("admin", "doctor", "receptionist"))],
 )
-def risk_map(db: Session = Depends(get_db)):
+def risk_map():
     artifact = _get_artifact()
     model = artifact["models"][artifact["best_model_name"]]
     districts = sorted(artifact["latest_by_district"].keys())

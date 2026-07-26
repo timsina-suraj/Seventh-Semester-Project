@@ -27,15 +27,21 @@ export default function MyAppointments() {
                 <th>Doctor</th>
                 <th>Reason</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {appointments.map((a) => (
                 <tr key={a.id}>
-                  <td>{new Date(a.scheduled_at).toLocaleString()}</td>
+                  <td>{new Date(a.appointment_date).toLocaleString()}</td>
                   <td>#{a.doctor_id}</td>
                   <td>{a.reason || "—"}</td>
                   <td>{a.status}</td>
+                  <td>
+                    <button className="btn secondary" onClick={() => api.downloadAppointmentReceiptPdf(a.id)}>
+                      PDF
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas.dashboard import HospitalStats
@@ -10,5 +10,5 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"], dependencies=[Depend
 
 
 @router.get("/stats", response_model=HospitalStats)
-def hospital_stats(db: Session = Depends(get_db)):
-    return get_hospital_stats(db)
+async def hospital_stats(db: AsyncSession = Depends(get_db)):
+    return await get_hospital_stats(db)

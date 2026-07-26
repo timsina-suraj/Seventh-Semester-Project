@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/endpoints";
 
-const EMPTY_FORM = { patient_id: "", doctor_id: "", scheduled_at: "", reason: "" };
+const EMPTY_FORM = { patient_id: "", doctor_id: "", date: "", time: "", reason: "" };
 
 export default function BookAppointment() {
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [availableTimes, setAvailableTimes] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -17,7 +19,23 @@ export default function BookAppointment() {
     api.listDoctors().then((res) => setDoctors(res.data));
   }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    if (!form.doctor_id || !form.date) {
+      setAvailableTimes([]);
+      return;
+    }
+    setSlotsLoading(true);
+    api
+      .getAvailableSlots(form.doctor_id, form.date)
+      .then((res) => setAvailableTimes(res.data.available_times))
+      .catch(() => setAvailableTimes([]))
+      .finally(() => setSlotsLoading(false));
+  }, [form.doctor_id, form.date]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((f) => ({ ...f, [name]: value, ...(name === "doctor_id" || name === "date" ? { time: "" } : {}) }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +45,7 @@ export default function BookAppointment() {
       await api.createAppointment({
         patient_id: Number(form.patient_id),
         doctor_id: Number(form.doctor_id),
-        scheduled_at: new Date(form.scheduled_at).toISOString(),
+        appointment_date: `${form.date}T${form.time}`,
         reason: form.reason || null,
       });
       navigate("/appointments");
@@ -57,7 +75,7 @@ export default function BookAppointment() {
               <option value="">Select patient</option>
               {patients.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.district})
+                  {p.full_name} ({p.district})
                 </option>
               ))}
             </select>
@@ -74,14 +92,30 @@ export default function BookAppointment() {
             </select>
           </div>
           <div className="form-group">
-            <label>Date &amp; time</label>
-            <input
-              type="datetime-local"
-              name="scheduled_at"
-              value={form.scheduled_at}
-              onChange={handleChange}
-              required
-            />
+            <label>Date</label>
+            <input type="date" name="date" value={form.date} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Time</label>
+            <select name="time" value={form.time} onChange={handleChange} required disabled={!form.doctor_id || !form.date}>
+              <option value="">
+                {slotsLoading
+                  ? "Loading available times…"
+                  : !form.doctor_id || !form.date
+                  ? "Select a doctor and date first"
+                  : availableTimes.length === 0
+                  ? "No open slots on this date"
+                  : "Select a time"}
+              </option>
+              {availableTimes.map((t) => (
+                <option key={t} value={t}>
+                  {t.slice(0, 5)}
+                </option>
+              ))}
+            </select>
+            <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4 }}>
+              Only shows times inside the doctor's declared availability that aren't already booked.
+            </p>
           </div>
           <div className="form-group">
             <label>Reason</label>
@@ -89,7 +123,7 @@ export default function BookAppointment() {
           </div>
           {error && <div className="error-text">{error}</div>}
           <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-            <button className="btn" type="submit" disabled={saving}>
+            <button className="btn" type="submit" disabled={saving || !form.time}>
               {saving ? "Booking..." : "Book appointment"}
             </button>
             <button className="btn secondary" type="button" onClick={() => navigate("/appointments")}>

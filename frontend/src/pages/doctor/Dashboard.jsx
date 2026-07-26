@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext.jsx";
+import { nameMapById } from "../../utils/lookups.js";
 
 export default function DoctorDashboard() {
   const { user } = useAuth();
@@ -17,23 +18,24 @@ export default function DoctorDashboard() {
   }, []);
 
   const upcomingAppointments = appointments
-    .filter((a) => a.status === "scheduled")
-    .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
+    .filter((a) => a.status === "Pending" || a.status === "Confirmed")
+    .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
     .slice(0, 5);
 
-  const patientMap = Object.fromEntries(patients.map((p) => [p.id, p.name]));
+  const patientMap = nameMapById(patients);
 
   const quickActions = [
     { label: "🔬 Fill Diagnosis & Record", to: "/diagnosis", color: "#7c3aed" },
     { label: "🧑‍⚕️ View Patients", to: "/patients", color: "#2563eb" },
     { label: "📅 My Appointments", to: "/appointments", color: "#059669" },
+    { label: "🗓️ My Availability", to: "/doctor/availability", color: "#d97706" },
   ];
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1>Welcome, Dr. {user.email} 👨‍⚕️</h1>
+          <h1>Welcome, Dr. {user.fullName || user.email} 👨‍⚕️</h1>
         </div>
       </div>
 
@@ -96,7 +98,7 @@ export default function DoctorDashboard() {
             <tbody>
               {upcomingAppointments.map((a) => (
                 <tr key={a.id}>
-                  <td>{new Date(a.scheduled_at).toLocaleString()}</td>
+                  <td>{new Date(a.appointment_date).toLocaleString()}</td>
                   <td>{patientMap[a.patient_id] || `#${a.patient_id}`}</td>
                   <td>{a.reason || "—"}</td>
                   <td>

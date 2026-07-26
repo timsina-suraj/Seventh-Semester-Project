@@ -14,6 +14,7 @@ from app.ml.metrics import classification_report, train_test_split
 from app.ml.preprocessing import (
     SYMPTOM_BINARY_COLUMNS,
     SYMPTOM_NUMERIC_COLUMNS,
+    WHO_WARNING_SIGN_COLUMNS,
     build_symptom_features,
     load_csv,
     SYMPTOMS_CSV,
@@ -30,10 +31,10 @@ def train_and_store() -> dict:
     quality = validate_dataset(
         rows,
         required_columns=SYMPTOM_NUMERIC_COLUMNS + SYMPTOM_BINARY_COLUMNS + ["Outcome", "Gender", "Joint_Pain"],
-        numeric_outlier_columns=["Platelet_Count", "WBC_Count", "Body_Temperature"],
+        numeric_outlier_columns=["Platelet_day1", "Platelet_day3", "WBC_Count", "Body_Temperature"],
     )
 
-    X, y, feature_names, _ = build_symptom_features(rows)
+    X, y, feature_names, district_encoder, _ = build_symptom_features(rows)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     models = {
@@ -61,21 +62,22 @@ def train_and_store() -> dict:
         {"name": "Dengue Negative", "value": neg_count}
     ]
 
-    target_symptoms = ["Joint_Pain", "Headache", "Retro_Orbital_Pain", "Myalgia", "Rash"]
+    target_symptoms = ["Joint_Pain", "Headache", "Retro_Orbital_Pain", "Myalgia", "Rash"] + WHO_WARNING_SIGN_COLUMNS
     symptoms_data = []
     for col in target_symptoms:
         if col == "Joint_Pain":
-            count = sum(1 for row in rows if row.get("Joint_Pain", "None") != "None")
+            count = sum(1 for row in rows if row.get("Joint_Pain", "No_Joint_Pain") != "No_Joint_Pain")
         else:
             count = sum(1 for row in rows if int(row.get(col, 0)) == 1)
         symptoms_data.append({"symptom": col.replace("_", " "), "count": count})
-    
+
     symptoms_data.sort(key=lambda x: x["count"], reverse=True)
 
     artifact = {
         "models": fitted,
         "best_model_name": best_model_name,
         "feature_names": feature_names,
+        "district_encoder": district_encoder,
         "metrics": metrics,
         "diagnosis_dist": diagnosis_dist,
         "symptoms_data": symptoms_data,

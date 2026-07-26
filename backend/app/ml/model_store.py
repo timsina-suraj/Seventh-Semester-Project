@@ -22,7 +22,3 @@ def load(name: str):
         return None
     with open(path, "rb") as f:
         return pickle.load(f)
-
-
-def exists(name: str) -> bool:
-    return (STORE_DIR / f"{name}.pkl").exists()

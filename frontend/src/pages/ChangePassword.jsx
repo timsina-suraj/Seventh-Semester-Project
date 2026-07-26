@@ -13,6 +13,8 @@ export default function ChangePassword() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const isMustChange = user?.mustChangePassword;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -25,14 +27,20 @@ export default function ChangePassword() {
       setError("New password and confirmation do not match.");
       return;
     }
-    if (newPassword === currentPassword) {
+    if (!isMustChange && newPassword === currentPassword) {
       setError("New password must be different from the current one.");
       return;
     }
 
     setSaving(true);
     try {
-      await api.changePassword({ current_password: currentPassword, new_password: newPassword });
+      if (isMustChange) {
+        // First-time setup after OTP verification — there's no prior
+        // password to confirm, the OTP already proved identity.
+        await api.setInitialPassword({ new_password: newPassword });
+      } else {
+        await api.changePassword({ current_password: currentPassword, new_password: newPassword });
+      }
 
       // ── Security: invalidate the current session immediately. ──────────────
       // The token in localStorage was issued with the old credential. After a
@@ -41,16 +49,14 @@ export default function ChangePassword() {
       logout();
       navigate("/login", {
         replace: true,
-        state: { successMessage: "Password changed successfully. Please sign in with your new password." },
+        state: { successMessage: "Password set successfully. Please sign in with your new password." },
       });
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not change password.");
+      setError(err.response?.data?.detail || "Could not save password.");
     } finally {
       setSaving(false);
     }
   };
-
-  const isMustChange = user?.mustChangePassword;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", alignItems: "center", justifyContent: "center", background: "var(--color-bg)" }}>
@@ -88,17 +94,19 @@ export default function ChangePassword() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>{isMustChange ? "One-time (current) password" : "Current password"}</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              autoFocus
-              autoComplete="current-password"
-            />
-          </div>
+          {!isMustChange && (
+            <div className="form-group">
+              <label>Current password</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                autoFocus
+                autoComplete="current-password"
+              />
+            </div>
+          )}
           <div className="form-group">
             <label>New password</label>
             <input
@@ -107,6 +115,7 @@ export default function ChangePassword() {
               onChange={(e) => setNewPassword(e.target.value)}
               minLength={8}
               required
+              autoFocus={isMustChange}
               autoComplete="new-password"
             />
           </div>

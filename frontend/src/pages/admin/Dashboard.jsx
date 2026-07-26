@@ -24,7 +24,7 @@ const STAT_CONFIG = [
   },
   {
     key: "available_doctors",
-    label: "Available Doctors",
+    label: "Total Doctors",
     icon: "👨‍⚕️",
     color: "#059669",
     bg: "#f0fdf4",
@@ -72,10 +72,10 @@ const STAT_CONFIG = [
 const QUICK_LINKS = [
   { label: "➕ Register Patient", to: "/patients/register", color: "#2563eb" },
   { label: "📅 Book Appointment", to: "/appointments/book", color: "#7c3aed" },
-  { label: "👥 Manage Users",     to: "/users",              color: "#059669" },
-  { label: "📊 Analytics",        to: "/analytics",          color: "#0891b2" },
-  { label: "🗺️ Risk Map",         to: "/risk-map",           color: "#d97706" },
-  { label: "🔔 View Alerts",      to: "/alerts",             color: "#dc2626" },
+  { label: "👥 Manage Users", to: "/users", color: "#059669" },
+  { label: "📊 Analytics", to: "/analytics", color: "#0891b2" },
+  { label: "🗺️ Risk Map", to: "/risk-map", color: "#d97706" },
+  { label: "🔔 View Alerts", to: "/alerts", color: "#dc2626" },
 ];
 
 export default function AdminDashboard() {
@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       {/* ── Greeting ── */}
       <div className="page-header" style={{ marginBottom: 24 }}>
         <div>
-          <h1>{greeting}, {user.email} 👋</h1>
+          <h1>{greeting}, {user.fullName || user.email} 👋</h1>
         </div>
         <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
           {now.toLocaleDateString("en-NP", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -166,11 +166,11 @@ export default function AdminDashboard() {
           <table>
             <tbody>
               {[
-                { label: "Database",         status: "Operational", ok: true },
-                { label: "ML Models",         status: "Loaded",      ok: true },
-                { label: "API Server",        status: "Running",     ok: true },
-                { label: "Pharmacy Alerts",   status: stats?.low_stock_items > 0 ? `${stats.low_stock_items} items low` : "All stocked", ok: !stats?.low_stock_items },
-                { label: "Dengue Alerts",     status: stats?.open_alerts > 0 ? `${stats.open_alerts} open` : "Clear",  ok: !stats?.open_alerts },
+                { label: "Database", status: "Operational", ok: true },
+                { label: "ML Models", status: "Loaded", ok: true },
+                { label: "API Server", status: "Running", ok: true },
+                { label: "Pharmacy Alerts", status: stats?.low_stock_items > 0 ? `${stats.low_stock_items} items low` : "All stocked", ok: !stats?.low_stock_items },
+                { label: "Dengue Alerts", status: stats?.open_alerts > 0 ? `${stats.open_alerts} open` : "Clear", ok: !stats?.open_alerts },
               ].map(({ label, status, ok }) => (
                 <tr key={label}>
                   <td style={{ padding: "8px 0", color: "var(--color-text-muted)", width: 160 }}>{label}</td>
@@ -209,7 +209,7 @@ export default function AdminDashboard() {
               </div>
               <div style={highlightStyle("#f0fdf4", "#bbf7d0")}>
                 <span style={{ color: "#059669", fontWeight: 700, fontSize: 20 }}>{stats.available_doctors}</span>
-                <span style={{ color: "#059669", fontSize: 13 }}>doctors available today</span>
+                <span style={{ color: "#059669", fontSize: 13 }}>doctors on staff</span>
               </div>
               <div style={highlightStyle("#faf5ff", "#ddd6fe")}>
                 <span style={{ color: "#7c3aed", fontWeight: 700, fontSize: 20 }}>{stats.total_appointments}</span>

@@ -1,10 +1,10 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
 from app.services.risk_classifier import is_high_risk
 
 
-def create_district_alert(db: Session, district: str, predicted_cases: float, risk_level: str) -> Alert | None:
+async def create_district_alert(db: AsyncSession, district: str, predicted_cases: float, risk_level: str) -> Alert | None:
     """Creates a HIGH RISK district alert (per spec 5.5) if the risk level
     warrants it. Returns None if no alert was needed."""
     if not is_high_risk(risk_level):
@@ -22,12 +22,12 @@ def create_district_alert(db: Session, district: str, predicted_cases: float, ri
         status="open",
     )
     db.add(alert)
-    db.commit()
-    db.refresh(alert)
+    await db.commit()
+    await db.refresh(alert)
     return alert
 
 
-def create_patient_diagnosis_alert(db: Session, district: str | None, severity: str, patient_id: int) -> Alert:
+async def create_patient_diagnosis_alert(db: AsyncSession, district: str | None, severity: str, patient_id: int) -> Alert:
     """Creates a NEW DENGUE CASE DETECTED alert (per spec 5.5)."""
     message = (
         f"NEW DENGUE CASE DETECTED\n\nPatient ID: {patient_id}\nDistrict: {district or 'Unknown'}\n"
@@ -41,6 +41,6 @@ def create_patient_diagnosis_alert(db: Session, district: str | None, severity: 
         status="open",
     )
     db.add(alert)
-    db.commit()
-    db.refresh(alert)
+    await db.commit()
+    await db.refresh(alert)
     return alert

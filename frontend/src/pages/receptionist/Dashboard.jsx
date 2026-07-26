@@ -29,7 +29,7 @@ export default function ReceptionistDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Welcome, {user.email} 👋</h1>
+          <h1>Welcome, {user.fullName || user.email} 👋</h1>
         </div>
       </div>
 
@@ -87,8 +87,8 @@ export default function ReceptionistDashboard() {
           <table>
             <thead>
               <tr>
+                <th>Patient #</th>
                 <th>Name</th>
-                <th>Age</th>
                 <th>Gender</th>
                 <th>District</th>
                 <th>Login</th>
@@ -97,13 +97,13 @@ export default function ReceptionistDashboard() {
             <tbody>
               {recentPatients.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.name}</td>
-                  <td>{p.age}</td>
+                  <td>{p.patient_number}</td>
+                  <td>{p.full_name}</td>
                   <td>{p.gender}</td>
                   <td>{p.district}</td>
                   <td>
                     {p.login_email
-                      ? `${p.login_email} (${p.must_change_password ? "⚠ temp" : "✅ set"})`
+                      ? `${p.login_email} (${p.must_change_password ? "⚠ pending" : "✅ set"})`
                       : "—"}
                   </td>
                 </tr>

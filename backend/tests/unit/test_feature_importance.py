@@ -55,3 +55,40 @@ def test_feature_importances_raises_if_not_fitted():
         assert False, "expected RuntimeError"
     except RuntimeError:
         pass
+
+
+from app.ml.decision_tree import DecisionTreeClassifier
+from app.ml.gradient_boosting import GBClassifier
+from app.ml.random_forest import RandomForestClassifier
+
+
+def test_decision_tree_classifier_feature_importances():
+    X, y = _make_predictive_dataset()
+    model = DecisionTreeClassifier(max_depth=4, min_samples_split=2, n_classes=2)
+    model.fit(X, y)
+
+    importances = model.feature_importances_
+    assert np.isclose(importances.sum(), 1.0)
+    assert importances[0] == importances.max()
+
+
+def test_random_forest_classifier_feature_importances():
+    X, y = _make_predictive_dataset(n=300)
+    model = RandomForestClassifier(n_estimators=10, max_depth=4, min_samples_split=2, n_classes=2, random_state=0)
+    model.fit(X, y)
+
+    importances = model.feature_importances_
+    assert importances.shape == (3,)
+    assert np.isclose(importances.sum(), 1.0)
+    assert importances[0] == importances.max()
+
+
+def test_gb_classifier_feature_importances():
+    X, y = _make_predictive_dataset(n=300)
+    model = GBClassifier(n_estimators=20, learning_rate=0.1, max_depth=2, min_samples_split=2)
+    model.fit(X, y)
+
+    importances = model.feature_importances_
+    assert importances.shape == (3,)
+    assert np.isclose(importances.sum(), 1.0)
+    assert importances[0] == importances.max()

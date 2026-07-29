@@ -123,3 +123,8 @@ class RandomForestClassifier:
             counts = np.bincount(votes[:, i], minlength=self.n_classes)
             result[i] = counts.argmax()
         return result
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        per_tree = np.array([tree.feature_importances() for tree in self.trees])
+        return per_tree.mean(axis=0)

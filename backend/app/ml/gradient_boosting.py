@@ -108,3 +108,8 @@ class GBClassifier:
 
     def predict(self, X) -> np.ndarray:
         return (self.predict_proba(X)[:, 1] >= 0.5).astype(int)
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        per_tree = np.array([tree.feature_importances() for tree in self.trees])
+        return per_tree.mean(axis=0)

@@ -37,3 +37,7 @@ class DecisionTreeClassifier:
 
     def predict_proba(self, X) -> np.ndarray:
         return self.tree.predict_proba(X)
+
+    @property
+    def feature_importances_(self) -> np.ndarray:
+        return self.tree.feature_importances()

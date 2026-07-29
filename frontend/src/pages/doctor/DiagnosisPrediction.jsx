@@ -198,7 +198,7 @@ export default function DiagnosisPrediction() {
       setItems([{ ...EMPTY_ITEM }]);
       setLabTests([""]);
     } catch (err) {
-      setError(err.message || err.response?.data?.detail || "Failed to save medical record.");
+      setError(err.response?.data?.detail || err.message || "Failed to save medical record.");
     } finally {
       setLoading(false);
     }

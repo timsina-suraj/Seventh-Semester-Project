@@ -163,6 +163,18 @@ export default function DiagnosisPrediction() {
         throw new Error("Please select a patient.");
       }
 
+      for (const row of items) {
+        if (!row.medicine_id) continue;
+        const medicine = medicines.find((m) => String(m.id) === row.medicine_id);
+        const qty = Number(row.quantity);
+        if (!row.quantity || !Number.isInteger(qty) || qty < 1) {
+          throw new Error(`Enter a valid quantity for ${row.medicine_name || "the selected medicine"}.`);
+        }
+        if (medicine && qty > medicine.stock_quantity) {
+          throw new Error(`Enter a quantity for ${medicine.name} (available: ${medicine.stock_quantity}).`);
+        }
+      }
+
       const { data: record } = await api.createMedicalRecord({
         ...form,
         patient_id: Number(form.patient_id),
@@ -197,8 +209,11 @@ export default function DiagnosisPrediction() {
       setForm(EMPTY_FORM);
       setItems([{ ...EMPTY_ITEM }]);
       setLabTests([""]);
+      api.listPharmacyItems().then((res) => setMedicines(res.data)).catch(() => {});
     } catch (err) {
-      setError(err.response?.data?.detail || err.message || "Failed to save medical record.");
+      const detail = err.response?.data?.detail;
+      const detailMessage = Array.isArray(detail) ? detail.map((d) => d.msg).join("; ") : detail;
+      setError(detailMessage || err.message || "Failed to save medical record.");
     } finally {
       setLoading(false);
     }
@@ -260,9 +275,11 @@ export default function DiagnosisPrediction() {
                   <label>Medicine</label>
                   <select value={row.medicine_id} onChange={(e) => handleMedicineSelect(i, e.target.value)}>
                     <option value="">— Custom (not in pharmacy) —</option>
-                    {medicines.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
-                    ))}
+                    {medicines
+                      .filter((m) => m.stock_quantity !== 0)
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
+                      ))}
                   </select>
                   {!row.medicine_id && (
                     <input
@@ -283,6 +300,7 @@ export default function DiagnosisPrediction() {
                       value={row.quantity}
                       onChange={(e) => handleItemChange(i, "quantity", e.target.value)}
                       placeholder="e.g. 10"
+                      required
                     />
                     <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4 }}>
                       {selectedMedicine?.stock_quantity ?? 0} {selectedMedicine?.unit} in stock

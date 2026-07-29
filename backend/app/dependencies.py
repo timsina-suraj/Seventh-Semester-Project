@@ -137,7 +137,7 @@ def get_prescription_service(
     db: AsyncSession = Depends(get_db),
     audit_service: AuditService = Depends(get_audit_service),
 ) -> PrescriptionService:
-    return PrescriptionService(PrescriptionRepository(db), audit_service)
+    return PrescriptionService(PrescriptionRepository(db), MedicineRepository(db), audit_service)
 
 
 def get_lab_test_repository(db: AsyncSession = Depends(get_db)) -> LabTestRepository:

@@ -193,6 +193,66 @@ async def test_emr_and_prescription_flow_with_nurse_read_only_access(client, wor
     assert resp.status_code == 403
 
 
+async def test_doctor_can_read_pharmacy_catalog_but_not_write(client, world):
+    resp = await client.get("/pharmacy", headers=world["doctor"])
+    assert resp.status_code == 200, resp.text
+
+    resp = await client.post(
+        "/pharmacy", headers=world["doctor"],
+        json={"name": "Should Not Be Created", "unit": "tablets", "stock_quantity": 10, "reorder_threshold": 5},
+    )
+    assert resp.status_code == 403
+
+
+async def test_prescribing_catalog_medicine_decrements_stock(client, world):
+    resp = await client.post(
+        "/pharmacy", headers=world["admin"],
+        json={"name": "Ibuprofen 400mg", "unit": "tablets", "stock_quantity": 20, "reorder_threshold": 5},
+    )
+    assert resp.status_code == 200, resp.text
+    medicine = resp.json()
+
+    resp = await client.post(
+        "/prescriptions",
+        headers=world["doctor"],
+        json={
+            "patient_id": world["patient_id"],
+            "items": [
+                {"medicine_name": medicine["name"], "medicine_id": medicine["id"], "quantity": 6, "dosage": "400mg"},
+                {"medicine_name": "Herbal tea (not stocked)"},
+            ],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    items = resp.json()["items"]
+    assert next(i for i in items if i["medicine_id"] == medicine["id"])["quantity"] == 6
+    assert next(i for i in items if i["medicine_name"] == "Herbal tea (not stocked)")["medicine_id"] is None
+
+    resp = await client.get("/pharmacy", headers=world["admin"], params={"search": "Ibuprofen"})
+    assert resp.json()[0]["stock_quantity"] == 14  # 20 - 6
+
+
+async def test_prescribing_more_than_available_stock_is_blocked(client, world):
+    resp = await client.post(
+        "/pharmacy", headers=world["admin"],
+        json={"name": "Aspirin 75mg", "unit": "tablets", "stock_quantity": 5, "reorder_threshold": 2},
+    )
+    medicine = resp.json()
+
+    resp = await client.post(
+        "/prescriptions",
+        headers=world["doctor"],
+        json={
+            "patient_id": world["patient_id"],
+            "items": [{"medicine_name": medicine["name"], "medicine_id": medicine["id"], "quantity": 6}],
+        },
+    )
+    assert resp.status_code == 422, resp.text
+
+    resp = await client.get("/pharmacy", headers=world["admin"], params={"search": "Aspirin"})
+    assert resp.json()[0]["stock_quantity"] == 5  # unchanged — nothing was saved
+
+
 # ── Lab request / result ────────────────────────────────────────────────────────
 
 async def test_lab_test_request_and_result_upload(client, world):

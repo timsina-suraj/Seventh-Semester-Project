@@ -426,6 +426,7 @@ DENGUE_PRESCRIPTION_ITEMS = [
 ]
 OTHER_PRESCRIPTION_ITEMS = [
     dict(medicine_name="Vitamin C 500mg", dosage="500mg", frequency="Once a day", duration="10 days", instructions="With breakfast"),
+    dict(medicine_name="Herbal Fever Tonic", dosage="1 tsp", frequency="Twice a day", duration="5 days", instructions="Traditional remedy, not from hospital pharmacy"),
 ]
 
 # Medicine name -> Medicine row, so seeded prescription items can link to

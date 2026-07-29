@@ -15,6 +15,8 @@ def test_get_analytics_includes_feature_importance_for_best_model():
     assert "featureImportance" in result
     assert "bestDiagnosisModel" in result
     assert len(result["featureImportance"]) <= 10
+    assert result["featureImportance"], "best model's importances should be populated after retraining"
+    assert all("feature" in e and "importance" in e for e in result["featureImportance"])
     assert result["featureImportance"] == sorted(
         result["featureImportance"], key=lambda e: e["importance"], reverse=True
     )

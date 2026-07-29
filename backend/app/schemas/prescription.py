@@ -1,14 +1,24 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class PrescriptionItemCreate(BaseModel):
     medicine_name: str = Field(min_length=1, max_length=128)
+    medicine_id: int | None = None
+    quantity: int | None = Field(default=None, ge=1)
     dosage: str | None = None
     frequency: str | None = None
     duration: str | None = None
     instructions: str | None = None
+
+    @model_validator(mode="after")
+    def validate_quantity_paired_with_medicine_id(self) -> "PrescriptionItemCreate":
+        if self.medicine_id is not None and self.quantity is None:
+            raise ValueError("quantity is required when medicine_id is set")
+        if self.medicine_id is None and self.quantity is not None:
+            raise ValueError("quantity can only be set together with medicine_id")
+        return self
 
 
 class PrescriptionItemRead(PrescriptionItemCreate):

@@ -43,18 +43,6 @@ export default function PatientDashboard() {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="section-title">Quick Actions</div>
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
-        <button
-          className="btn"
-          style={{ background: "#dc2626", fontSize: 14, padding: "10px 18px" }}
-          onClick={() => navigate("/dengue-check")}
-        >
-          🩺 Self Dengue Check
-        </button>
-      </div>
-
       <div className="grid-2" style={{ marginBottom: 24 }}>
         {/* Profile card */}
         <div className="card">

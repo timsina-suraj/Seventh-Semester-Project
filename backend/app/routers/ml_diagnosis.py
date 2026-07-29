@@ -2,21 +2,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.dependencies import get_lab_test_repository, get_patient_repository
+from app.dependencies import get_lab_test_repository
 from app.ml import train_diagnosis
 from app.ml.preprocessing import WHO_WARNING_SIGN_COLUMNS, encode_single_patient
 from app.models.medical_record import MedicalRecord
 from app.models.patient import Patient
-from app.models.user import User
 from app.repositories.lab_test_repository import LabTestRepository
-from app.repositories.patient_repository import PatientRepository
 from app.schemas.ml import (
     ClassificationMetrics,
     PatientDiagnosisRequest,
     PatientDiagnosisResponse,
     TrainDiagnosisResponse,
 )
-from app.security.auth import get_current_user
 from app.security.rbac import require_role
 from app.services.alert_service import create_patient_diagnosis_alert
 from app.services.lab_feature_service import apply_lab_history
@@ -61,15 +58,16 @@ def train_diagnosis_model():
 @router.post(
     "/predict/patient",
     response_model=PatientDiagnosisResponse,
-    dependencies=[Depends(require_role("admin", "doctor", "patient"))],
+    dependencies=[Depends(require_role("admin", "doctor"))],
 )
 async def predict_patient(
     payload: PatientDiagnosisRequest,
     db: AsyncSession = Depends(get_db),
-    patient_repo: PatientRepository = Depends(get_patient_repository),
     lab_test_repo: LabTestRepository = Depends(get_lab_test_repository),
-    current_user: User = Depends(get_current_user),
 ):
+    """Symptom-based dengue risk assessment — run by a doctor (or admin)
+    after consultation, not self-served by the patient (see DengueCheck
+    removal from the patient portal)."""
     artifact = train_diagnosis.load_artifact()
     if artifact is None:
         raise HTTPException(
@@ -78,16 +76,10 @@ async def predict_patient(
         )
 
     district = None
-    if current_user.role == "patient":
-        patient = await patient_repo.get_by_user_id(current_user.id)
-        if patient:
-            payload.patient_id = patient.id
-            district = patient.district
-    else:
-        if payload.patient_id:
-            p = await db.get(Patient, payload.patient_id)
-            if p:
-                district = p.district
+    if payload.patient_id:
+        p = await db.get(Patient, payload.patient_id)
+        if p:
+            district = p.district
     if not payload.district and district:
         payload.district = district
 

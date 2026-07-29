@@ -28,7 +28,6 @@ import PatientDashboard from "./pages/patient/Dashboard.jsx";
 import Profile from "./pages/patient/Profile.jsx";
 import MyAppointments from "./pages/patient/MyAppointments.jsx";
 import Reports from "./pages/patient/Reports.jsx";
-import DengueCheck from "./pages/patient/DengueCheck.jsx";
 import Prescriptions from "./pages/Prescriptions.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 
@@ -108,7 +107,6 @@ export default function App() {
             <Route path="/my-profile" element={<Profile />} />
             <Route path="/my-appointments" element={<MyAppointments />} />
             <Route path="/my-reports" element={<Reports />} />
-            <Route path="/dengue-check" element={<DengueCheck />} />
           </Route>
         </Route>
       </Route>

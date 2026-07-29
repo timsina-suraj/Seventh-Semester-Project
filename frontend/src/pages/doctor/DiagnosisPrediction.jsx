@@ -11,7 +11,7 @@ const EMPTY_FORM = {
   follow_up_date: "",
 };
 
-const EMPTY_ITEM = { medicine_name: "", dosage: "", frequency: "", duration: "", instructions: "" };
+const EMPTY_ITEM = { medicine_id: "", medicine_name: "", quantity: "", dosage: "", frequency: "", duration: "", instructions: "" };
 
 const ML_NUMERIC_FIELDS = [
   "age", "days_since_fever_onset", "body_temperature",
@@ -70,6 +70,7 @@ const MlCheckboxRow = ({ label, name, form, onChange }) => (
 
 export default function DiagnosisPrediction() {
   const [patients, setPatients] = useState([]);
+  const [medicines, setMedicines] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [labTests, setLabTests] = useState([""]);
@@ -85,6 +86,7 @@ export default function DiagnosisPrediction() {
   useEffect(() => {
     // Doctors only see their linked patients now based on backend logic
     api.listPatients().then((res) => setPatients(res.data)).catch(() => {});
+    api.listPharmacyItems().then((res) => setMedicines(res.data)).catch(() => {});
   }, []);
 
   const handleChange = (e) => {
@@ -136,6 +138,15 @@ export default function DiagnosisPrediction() {
   const addItemRow = () => setItems((rows) => [...rows, { ...EMPTY_ITEM }]);
   const removeItemRow = (index) => setItems((rows) => rows.filter((_, i) => i !== index));
 
+  const handleMedicineSelect = (index, medicineId) => {
+    if (!medicineId) {
+      setItems((rows) => rows.map((row, i) => (i === index ? { ...row, medicine_id: "", medicine_name: "", quantity: "" } : row)));
+      return;
+    }
+    const medicine = medicines.find((m) => String(m.id) === medicineId);
+    setItems((rows) => rows.map((row, i) => (i === index ? { ...row, medicine_id: medicineId, medicine_name: medicine.name, quantity: "" } : row)));
+  };
+
   const handleLabTestChange = (index, value) => {
     setLabTests((rows) => rows.map((row, i) => (i === index ? value : row)));
   };
@@ -158,7 +169,17 @@ export default function DiagnosisPrediction() {
         follow_up_date: form.follow_up_date || null,
       });
 
-      const prescriptionItems = items.filter((row) => row.medicine_name.trim());
+      const prescriptionItems = items
+        .filter((row) => row.medicine_name.trim())
+        .map((row) => ({
+          medicine_name: row.medicine_name,
+          medicine_id: row.medicine_id ? Number(row.medicine_id) : null,
+          quantity: row.quantity ? Number(row.quantity) : null,
+          dosage: row.dosage,
+          frequency: row.frequency,
+          duration: row.duration,
+          instructions: row.instructions,
+        }));
       if (prescriptionItems.length > 0) {
         await api.createPrescription({
           patient_id: Number(form.patient_id),
@@ -231,35 +252,67 @@ export default function DiagnosisPrediction() {
           </div>
 
           <div className="section-title" style={{ marginTop: 20 }}>Prescription (optional)</div>
-          {items.map((row, i) => (
-            <div key={i} className="form-row" style={{ alignItems: "flex-end", marginBottom: 8 }}>
-              <div className="form-group">
-                <label>Medicine</label>
-                <input value={row.medicine_name} onChange={(e) => handleItemChange(i, "medicine_name", e.target.value)} placeholder="e.g. Paracetamol 500mg" />
+          {items.map((row, i) => {
+            const selectedMedicine = medicines.find((m) => String(m.id) === row.medicine_id);
+            return (
+              <div key={i} className="form-row" style={{ alignItems: "flex-end", marginBottom: 8 }}>
+                <div className="form-group">
+                  <label>Medicine</label>
+                  <select value={row.medicine_id} onChange={(e) => handleMedicineSelect(i, e.target.value)}>
+                    <option value="">— Custom (not in pharmacy) —</option>
+                    {medicines.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.unit})</option>
+                    ))}
+                  </select>
+                  {!row.medicine_id && (
+                    <input
+                      style={{ marginTop: 6 }}
+                      value={row.medicine_name}
+                      onChange={(e) => handleItemChange(i, "medicine_name", e.target.value)}
+                      placeholder="e.g. Paracetamol 500mg"
+                    />
+                  )}
+                </div>
+                {row.medicine_id && (
+                  <div className="form-group">
+                    <label>Quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={selectedMedicine?.stock_quantity}
+                      value={row.quantity}
+                      onChange={(e) => handleItemChange(i, "quantity", e.target.value)}
+                      placeholder="e.g. 10"
+                    />
+                    <div style={{ fontSize: 12, color: "var(--color-text-muted)", marginTop: 4 }}>
+                      {selectedMedicine?.stock_quantity ?? 0} {selectedMedicine?.unit} in stock
+                    </div>
+                  </div>
+                )}
+                <div className="form-group">
+                  <label>Dosage</label>
+                  <input value={row.dosage} onChange={(e) => handleItemChange(i, "dosage", e.target.value)} placeholder="500mg" />
+                </div>
+                <div className="form-group">
+                  <label>Frequency</label>
+                  <input value={row.frequency} onChange={(e) => handleItemChange(i, "frequency", e.target.value)} placeholder="3x/day" />
+                </div>
+                <div className="form-group">
+                  <label>Duration</label>
+                  <input value={row.duration} onChange={(e) => handleItemChange(i, "duration", e.target.value)} placeholder="5 days" />
+                </div>
+                <div className="form-group">
+                  <label>Instructions</label>
+                  <input value={row.instructions} onChange={(e) => handleItemChange(i, "instructions", e.target.value)} placeholder="After meals" />
+                </div>
+                {items.length > 1 && (
+                  <button type="button" className="btn secondary" onClick={() => removeItemRow(i)} style={{ marginBottom: 14 }}>
+                    Remove
+                  </button>
+                )}
               </div>
-              <div className="form-group">
-                <label>Dosage</label>
-                <input value={row.dosage} onChange={(e) => handleItemChange(i, "dosage", e.target.value)} placeholder="500mg" />
-              </div>
-              <div className="form-group">
-                <label>Frequency</label>
-                <input value={row.frequency} onChange={(e) => handleItemChange(i, "frequency", e.target.value)} placeholder="3x/day" />
-              </div>
-              <div className="form-group">
-                <label>Duration</label>
-                <input value={row.duration} onChange={(e) => handleItemChange(i, "duration", e.target.value)} placeholder="5 days" />
-              </div>
-              <div className="form-group">
-                <label>Instructions</label>
-                <input value={row.instructions} onChange={(e) => handleItemChange(i, "instructions", e.target.value)} placeholder="After meals" />
-              </div>
-              {items.length > 1 && (
-                <button type="button" className="btn secondary" onClick={() => removeItemRow(i)} style={{ marginBottom: 14 }}>
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
           <button type="button" className="btn secondary" onClick={addItemRow} style={{ marginBottom: 20 }}>
             + Add medicine
           </button>

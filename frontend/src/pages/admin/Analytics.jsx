@@ -65,6 +65,8 @@ export default function Analytics() {
     diagnosisDist,
     symptomsData,
     weatherData,
+    featureImportance,
+    bestDiagnosisModel,
   } = data;
 
   const cmTotal = CM ? CM.TP + CM.FP + CM.FN + CM.TN : 0;
@@ -243,7 +245,21 @@ export default function Analytics() {
           </ResponsiveContainer>
         </div>
 
-        {/* 9. Weather vs Dengue Cases */}
+        {/* 9. Feature Importance */}
+        <div className="card" style={{ gridColumn: "1 / -1" }}>
+          <CardTitle>🎯 Feature Importance — {bestDiagnosisModel} (What Drives the Prediction)</CardTitle>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={featureImportance} layout="vertical" margin={{ left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} fontSize={12} />
+              <YAxis type="category" dataKey="feature" fontSize={11} width={160} />
+              <Tooltip formatter={(v) => `${(v * 100).toFixed(1)}%`} />
+              <Bar dataKey="importance" fill="#9333ea" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 10. Weather vs Dengue Cases */}
         <div className="card" style={{ gridColumn: "1 / -1" }}>
           <CardTitle>🌦️ Weather vs Dengue Cases</CardTitle>
           <ResponsiveContainer width="100%" height={280}>

@@ -51,6 +51,11 @@ def get_analytics():
         if model_name == best_diagnosis_model:
             cm = metrics.get("confusion_matrix", {"TP": 0, "FP": 0, "FN": 0, "TN": 0})
 
+    feature_importance_list = diagnosis_artifact.get("feature_importance", {}).get(best_diagnosis_model, [])[:10]
+    best_diagnosis_display = best_diagnosis_model.replace("_", " ").title()
+    if best_diagnosis_display == "Xgboost":
+        best_diagnosis_display = "XGBoost"
+
     return {
         "modelRegressionData": model_regression_data,
         "classificationData": classification_data,
@@ -58,5 +63,7 @@ def get_analytics():
         "actualVsPredicted": dengue_artifact.get("actual_vs_predicted", []),
         "weatherData": dengue_artifact.get("weather_data", []),
         "diagnosisDist": diagnosis_artifact.get("diagnosis_dist", []),
-        "symptomsData": diagnosis_artifact.get("symptoms_data", [])
+        "symptomsData": diagnosis_artifact.get("symptoms_data", []),
+        "featureImportance": feature_importance_list,
+        "bestDiagnosisModel": best_diagnosis_display,
     }

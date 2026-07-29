@@ -108,3 +108,17 @@ def test_named_feature_importance_sorts_descending_with_names():
         {"feature": "wbc_count", "importance": 0.2},
         {"feature": "age", "importance": 0.1},
     ]
+
+
+from app.ml import train_diagnosis
+
+
+def test_train_and_store_includes_feature_importance_for_all_three_models():
+    result = train_diagnosis.train_and_store()
+
+    assert set(result["feature_importance"].keys()) == {"decision_tree", "random_forest", "xgboost"}
+    for ranked in result["feature_importance"].values():
+        assert len(ranked) == len(result["feature_names"])
+        assert {"feature", "importance"} <= ranked[0].keys()
+        total = sum(entry["importance"] for entry in ranked)
+        assert 0.9 < total <= 1.01  # normalized, allowing rounding

@@ -10,7 +10,7 @@ from __future__ import annotations
 from app.ml import model_store
 from app.ml.decision_tree import DecisionTreeClassifier
 from app.ml.gradient_boosting import GBClassifier
-from app.ml.metrics import classification_report, train_test_split
+from app.ml.metrics import classification_report, named_feature_importance, train_test_split
 from app.ml.preprocessing import (
     SYMPTOM_BINARY_COLUMNS,
     SYMPTOM_NUMERIC_COLUMNS,
@@ -52,6 +52,11 @@ def train_and_store() -> dict:
         metrics[name] = classification_report(y_test, preds)
         fitted[name] = model
 
+    feature_importance = {
+        name: named_feature_importance(model.feature_importances_, feature_names)
+        for name, model in fitted.items()
+    }
+
     # Best = highest F1 (balances precision/recall, important for a clinical positive class)
     best_model_name = max(metrics, key=lambda k: metrics[k]["f1"])
 
@@ -79,6 +84,7 @@ def train_and_store() -> dict:
         "feature_names": feature_names,
         "district_encoder": district_encoder,
         "metrics": metrics,
+        "feature_importance": feature_importance,
         "diagnosis_dist": diagnosis_dist,
         "symptoms_data": symptoms_data,
         "dataset_quality": quality.as_dict(),

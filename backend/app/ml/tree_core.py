@@ -69,6 +69,7 @@ class CARTTree:
         self.max_features = max_features
         self.n_classes = n_classes
         self.root: _Node | None = None
+        self._raw_importances: np.ndarray | None = None
         self._rng = np.random.RandomState(random_state)
 
     # -- fitting -----------------------------------------------------------
@@ -82,6 +83,7 @@ class CARTTree:
             assert self.n_classes is not None
         else:
             y = np.asarray(y, dtype=float)
+        self._raw_importances = np.zeros(X.shape[1])
         self.root = self._grow(X, y, depth=0)
         return self
 
@@ -115,8 +117,10 @@ class CARTTree:
         if best is None:
             return _Node(value=self._leaf_value(y))
 
-        feature_index, threshold, left_mask = best
+        feature_index, threshold, left_mask, gain = best
         right_mask = ~left_mask
+        assert self._raw_importances is not None
+        self._raw_importances[feature_index] += gain * n_samples
 
         left = self._grow(X[left_mask], y[left_mask], depth + 1)
         right = self._grow(X[right_mask], y[right_mask], depth + 1)
@@ -160,7 +164,7 @@ class CARTTree:
 
                 if gain > best_gain:
                     best_gain = gain
-                    best = (feat, threshold, left_mask)
+                    best = (feat, threshold, left_mask, gain)
 
         return best
 
@@ -194,3 +198,11 @@ class CARTTree:
         assert self.task == "classification"
         X = np.asarray(X, dtype=float)
         return np.array([self._predict_one(x) for x in X])
+
+    def feature_importances(self) -> np.ndarray:
+        """Mean Decrease in Impurity: total impurity reduction attributed to
+        each feature across every split in this tree, normalized to sum to 1."""
+        if self._raw_importances is None:
+            raise RuntimeError("CARTTree must be fitted before requesting feature importances.")
+        total = self._raw_importances.sum()
+        return self._raw_importances / total if total > 0 else np.zeros_like(self._raw_importances)

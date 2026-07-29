@@ -31,7 +31,7 @@ A tree with no splits (pure/tiny leaf) returns an all-zero vector rather than di
 
 ## Wrapper changes
 
-- **`decision_tree.py`** (`DecisionTreeClassifier`, `DecisionTreeRegressor`): add `feature_importances_` property returning `self.tree.feature_importances()` directly (single tree, already normalized).
+- **`decision_tree.py`** (`DecisionTreeClassifier` only): add `feature_importances_` property returning `self.tree.feature_importances()` directly (single tree, already normalized).
 - **`random_forest.py`** (`RandomForestClassifier`): add `feature_importances_` property. Averages each of the 100 trees' *normalized* per-tree importances (standard convention — matches scikit-learn's `RandomForestClassifier.feature_importances_`, useful if ever cited in the report).
 - **`gradient_boosting.py`** (`GBClassifier`): same averaging across its 100 sequential boosting trees. These trees are fit on residuals/pseudo-residuals (`task="regression"` internally even for the classifier — see existing docstring), but MDI still validly ranks "which feature reduced error most" regardless of what target the tree was fit on.
 

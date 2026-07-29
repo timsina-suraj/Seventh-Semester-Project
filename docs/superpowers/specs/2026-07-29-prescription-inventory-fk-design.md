@@ -111,3 +111,5 @@ New integration tests (in `backend/tests/integration/`, alongside the existing p
 - No new `pharmacist` role or dispense/fulfillment workflow.
 - No changes to the low-stock alert mechanism itself (it's already reactive/derived).
 - No changes to the risk map (already uses real GeoJSON polygons).
+- No row-level locking for concurrent prescriptions against the same medicine: two doctors prescribing the same medicine at the same time can both pass the stock check before either decrements, producing a lost-update race (the same unlocked check-then-write pattern already exists in `AppointmentService.book`). This is an accepted limitation, not a regression introduced here.
+- A real fix, if ever needed, would be a `rowcount`-guarded atomic update (`UPDATE inventory SET quantity = quantity - :q WHERE medicine_id = :id AND quantity >= :q`, checking the affected row count) rather than row-level locking, since SQLite doesn't support `SELECT ... FOR UPDATE` meaningfully.

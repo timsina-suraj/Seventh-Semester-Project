@@ -73,3 +73,10 @@ def classification_report(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
         "f1": f1_score(y_true, y_pred),
         "confusion_matrix": confusion_matrix(y_true, y_pred)
     }
+
+
+# -- Feature importance -------------------------------------------------------
+
+def named_feature_importance(importances: np.ndarray, feature_names: list[str]) -> list[dict]:
+    pairs = sorted(zip(feature_names, importances.tolist()), key=lambda p: p[1], reverse=True)
+    return [{"feature": name, "importance": round(value, 4)} for name, value in pairs]

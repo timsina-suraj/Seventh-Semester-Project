@@ -92,3 +92,19 @@ def test_gb_classifier_feature_importances():
     assert importances.shape == (3,)
     assert np.isclose(importances.sum(), 1.0)
     assert importances[0] == importances.max()
+
+
+from app.ml.metrics import named_feature_importance
+
+
+def test_named_feature_importance_sorts_descending_with_names():
+    importances = np.array([0.1, 0.7, 0.2])
+    feature_names = ["age", "platelet_change_rate", "wbc_count"]
+
+    result = named_feature_importance(importances, feature_names)
+
+    assert result == [
+        {"feature": "platelet_change_rate", "importance": 0.7},
+        {"feature": "wbc_count", "importance": 0.2},
+        {"feature": "age", "importance": 0.1},
+    ]

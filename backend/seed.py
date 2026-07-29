@@ -380,98 +380,7 @@ else:
     medical_records = db.query(MedicalRecord).all()
     print(f"  ~ {len(medical_records)} medical records already exist, skipping")
 
-# ── 8. Prescriptions ────────────────────────────────────────────────────────────
-print("\n── Prescriptions ─────────────────────────────")
-
-DENGUE_PRESCRIPTION_ITEMS = [
-    dict(medicine_name="Paracetamol 500mg", dosage="500mg", frequency="3 times a day", duration="5 days", instructions="After meals"),
-    dict(medicine_name="ORS Sachets", dosage="1 sachet", frequency="As needed", duration="Until recovery", instructions="Dissolve in 1L water"),
-]
-OTHER_PRESCRIPTION_ITEMS = [
-    dict(medicine_name="Vitamin C 500mg", dosage="500mg", frequency="Once a day", duration="10 days", instructions="With breakfast"),
-]
-
-if db.query(Prescription).count() == 0:
-    count = 0
-    for mr in medical_records:
-        if not mr.ml_dengue_predicted and rng.random() > 0.3:
-            continue
-        items = DENGUE_PRESCRIPTION_ITEMS if mr.ml_dengue_predicted else OTHER_PRESCRIPTION_ITEMS
-        presc = Prescription(patient_id=mr.patient_id, doctor_id=mr.doctor_id, medical_record_id=mr.id, created_at=mr.created_at)
-        db.add(presc)
-        db.flush()
-        for item in items:
-            db.add(PrescriptionItem(prescription_id=presc.id, **item))
-        count += 1
-    db.flush()
-    print(f"  + {count} prescriptions created")
-else:
-    print(f"  ~ {db.query(Prescription).count()} prescriptions already exist, skipping")
-
-# ── 9. Lab Tests / Results ───────────────────────────────────────────────────────
-print("\n── Lab Tests / Results ───────────────────────")
-
-TEST_NAMES = ["CBC", "Dengue NS1", "Dengue IgM/IgG", "Platelet Count", "Hematocrit"]
-
-if db.query(LabTest).count() == 0:
-    test_count, result_count = 0, 0
-    for patient in patients:
-        for _ in range(rng.randint(1, 3)):
-            test = LabTest(
-                patient_id=patient.id,
-                doctor_id=rng.choice(doctors).id,
-                test_name=rng.choice(TEST_NAMES),
-                status="Requested",
-                requested_at=ago(days=rng.randint(0, 20)),
-            )
-            db.add(test)
-            db.flush()
-            test_count += 1
-            if rng.random() < 0.7:  # most requested tests already have a result
-                test.status = "Completed"
-                db.add(LabResult(
-                    lab_test_id=test.id,
-                    result_value=f"{rng.randint(45000, 250000)} /uL" if "Platelet" in test.test_name else rng.choice(["Positive", "Negative"]),
-                    completed_at=test.requested_at + timedelta(hours=rng.randint(2, 48)),
-                ))
-                result_count += 1
-    db.flush()
-    print(f"  + {test_count} lab tests, {result_count} results created")
-else:
-    print(f"  ~ {db.query(LabTest).count()} lab tests already exist, skipping")
-
-# ── 10. Patient Vitals / Medicine Administration ────────────────────────────────
-print("\n── Vitals / Medication Administration ────────")
-
-if db.query(PatientVitals).count() == 0 and nurses:
-    vitals_rows, admin_rows = [], []
-    for patient in patients:
-        for _ in range(rng.randint(0, 2)):
-            vitals_rows.append(PatientVitals(
-                patient_id=patient.id,
-                nurse_id=rng.choice(nurses).id,
-                temperature=round(rng.uniform(36.5, 40.0), 1),
-                blood_pressure=f"{rng.randint(100, 140)}/{rng.randint(65, 90)}",
-                heart_rate=rng.randint(60, 110),
-                oxygen_level=round(rng.uniform(94.0, 99.5), 1),
-                weight=round(rng.uniform(45.0, 90.0), 1),
-                recorded_at=ago(days=rng.randint(0, 15), hours=rng.randint(0, 12)),
-            ))
-        if rng.random() < 0.3:
-            admin_rows.append(MedicineAdministration(
-                patient_id=patient.id,
-                nurse_id=rng.choice(nurses).id,
-                medicine="Paracetamol 500mg",
-                dose="1 tablet",
-                time_given=ago(days=rng.randint(0, 10), hours=rng.randint(0, 12)),
-            ))
-    db.add_all(vitals_rows + admin_rows)
-    db.flush()
-    print(f"  + {len(vitals_rows)} vitals rows, {len(admin_rows)} medication administration rows created")
-else:
-    print(f"  ~ vitals already exist, skipping")
-
-# ── 11. Pharmacy Inventory (Medicines + Inventory) ───────────────────────────────
+# ── 8. Pharmacy Inventory (Medicines + Inventory) ───────────────────────────
 print("\n── Pharmacy ─────────────────────────────────")
 
 MEDICINES = [
@@ -508,7 +417,118 @@ if db.query(Medicine).count() == 0:
 else:
     print(f"  ~ {db.query(Medicine).count()} medicines already exist, skipping")
 
-# ── 11b. Documents ──────────────────────────────────────────────────────────────
+# ── 9. Prescriptions ────────────────────────────────────────────────────────────
+print("\n── Prescriptions ─────────────────────────────")
+
+DENGUE_PRESCRIPTION_ITEMS = [
+    dict(medicine_name="Paracetamol 500mg", dosage="500mg", frequency="3 times a day", duration="5 days", instructions="After meals"),
+    dict(medicine_name="ORS Sachets", dosage="1 sachet", frequency="As needed", duration="Until recovery", instructions="Dissolve in 1L water"),
+]
+OTHER_PRESCRIPTION_ITEMS = [
+    dict(medicine_name="Vitamin C 500mg", dosage="500mg", frequency="Once a day", duration="10 days", instructions="With breakfast"),
+]
+
+# Medicine name -> Medicine row, so seeded prescription items can link to
+# the real catalog/inventory the same way the app does at prescribe time.
+_medicine_by_name = {m.name: m for m in db.query(Medicine).all()}
+
+
+def _link_item(item: dict) -> dict:
+    """Link an item to its catalog medicine + a small quantity, decrementing
+    that medicine's live inventory row as we go. If stock would run out,
+    falls back to a free-text-only item (no medicine_id) — the same
+    fallback a doctor gets in the real UI when something isn't stocked."""
+    medicine = _medicine_by_name.get(item["medicine_name"])
+    if not medicine or not medicine.inventory:
+        return item
+    qty = rng.randint(2, 5)
+    if medicine.inventory.quantity < qty:
+        return item
+    medicine.inventory.quantity -= qty
+    return {**item, "medicine_id": medicine.id, "quantity": qty}
+
+
+if db.query(Prescription).count() == 0:
+    count = 0
+    for mr in medical_records:
+        if not mr.ml_dengue_predicted and rng.random() > 0.3:
+            continue
+        items = DENGUE_PRESCRIPTION_ITEMS if mr.ml_dengue_predicted else OTHER_PRESCRIPTION_ITEMS
+        presc = Prescription(patient_id=mr.patient_id, doctor_id=mr.doctor_id, medical_record_id=mr.id, created_at=mr.created_at)
+        db.add(presc)
+        db.flush()
+        for item in items:
+            db.add(PrescriptionItem(prescription_id=presc.id, **_link_item(item)))
+        count += 1
+    db.flush()
+    print(f"  + {count} prescriptions created")
+else:
+    print(f"  ~ {db.query(Prescription).count()} prescriptions already exist, skipping")
+
+# ── 10. Lab Tests / Results ───────────────────────────────────────────────────────
+print("\n── Lab Tests / Results ───────────────────────")
+
+TEST_NAMES = ["CBC", "Dengue NS1", "Dengue IgM/IgG", "Platelet Count", "Hematocrit"]
+
+if db.query(LabTest).count() == 0:
+    test_count, result_count = 0, 0
+    for patient in patients:
+        for _ in range(rng.randint(1, 3)):
+            test = LabTest(
+                patient_id=patient.id,
+                doctor_id=rng.choice(doctors).id,
+                test_name=rng.choice(TEST_NAMES),
+                status="Requested",
+                requested_at=ago(days=rng.randint(0, 20)),
+            )
+            db.add(test)
+            db.flush()
+            test_count += 1
+            if rng.random() < 0.7:  # most requested tests already have a result
+                test.status = "Completed"
+                db.add(LabResult(
+                    lab_test_id=test.id,
+                    result_value=f"{rng.randint(45000, 250000)} /uL" if "Platelet" in test.test_name else rng.choice(["Positive", "Negative"]),
+                    completed_at=test.requested_at + timedelta(hours=rng.randint(2, 48)),
+                ))
+                result_count += 1
+    db.flush()
+    print(f"  + {test_count} lab tests, {result_count} results created")
+else:
+    print(f"  ~ {db.query(LabTest).count()} lab tests already exist, skipping")
+
+# ── 11. Patient Vitals / Medicine Administration ────────────────────────────────
+print("\n── Vitals / Medication Administration ────────")
+
+if db.query(PatientVitals).count() == 0 and nurses:
+    vitals_rows, admin_rows = [], []
+    for patient in patients:
+        for _ in range(rng.randint(0, 2)):
+            vitals_rows.append(PatientVitals(
+                patient_id=patient.id,
+                nurse_id=rng.choice(nurses).id,
+                temperature=round(rng.uniform(36.5, 40.0), 1),
+                blood_pressure=f"{rng.randint(100, 140)}/{rng.randint(65, 90)}",
+                heart_rate=rng.randint(60, 110),
+                oxygen_level=round(rng.uniform(94.0, 99.5), 1),
+                weight=round(rng.uniform(45.0, 90.0), 1),
+                recorded_at=ago(days=rng.randint(0, 15), hours=rng.randint(0, 12)),
+            ))
+        if rng.random() < 0.3:
+            admin_rows.append(MedicineAdministration(
+                patient_id=patient.id,
+                nurse_id=rng.choice(nurses).id,
+                medicine="Paracetamol 500mg",
+                dose="1 tablet",
+                time_given=ago(days=rng.randint(0, 10), hours=rng.randint(0, 12)),
+            ))
+    db.add_all(vitals_rows + admin_rows)
+    db.flush()
+    print(f"  + {len(vitals_rows)} vitals rows, {len(admin_rows)} medication administration rows created")
+else:
+    print(f"  ~ vitals already exist, skipping")
+
+# ── 12. Documents ──────────────────────────────────────────────────────────────
 print("\n── Documents ─────────────────────────────────")
 
 if db.query(Document).count() == 0:
@@ -540,7 +560,7 @@ if db.query(Document).count() == 0:
 else:
     print(f"  ~ {db.query(Document).count()} documents already exist, skipping")
 
-# ── 12. Alerts ──────────────────────────────────────────────────────────────────
+# ── 13. Alerts ──────────────────────────────────────────────────────────────────
 print("\n── Alerts ───────────────────────────────────")
 
 ALERT_DATA = [
@@ -573,7 +593,7 @@ if db.query(Alert).count() == 0:
 else:
     print(f"  ~ {db.query(Alert).count()} alerts already exist, skipping")
 
-# ── 13. Security demo data (OTP / login / audit logs) ────────────────────────────
+# ── 14. Security demo data (OTP / login / audit logs) ────────────────────────────
 print("\n── Security logs ─────────────────────────────")
 
 if db.query(LoginLog).count() == 0:

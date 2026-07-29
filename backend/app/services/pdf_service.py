@@ -99,13 +99,13 @@ def build_prescription_pdf(prescription: dict, patient_name: str, doctor_name: s
         {"Doctor": doctor_name, "Prescription ID": str(prescription["id"]), "Date": prescription.get("created_at", "")},
     )
 
-    rows = [["Medicine", "Dosage", "Frequency", "Duration", "Instructions"]]
+    rows = [["Medicine", "Qty", "Dosage", "Frequency", "Duration", "Instructions"]]
     for item in prescription["items"]:
         rows.append([
-            item.get("medicine_name") or "—", item.get("dosage") or "—", item.get("frequency") or "—",
-            item.get("duration") or "—", item.get("instructions") or "—",
+            item.get("medicine_name") or "—", str(item.get("quantity") or "—"), item.get("dosage") or "—",
+            item.get("frequency") or "—", item.get("duration") or "—", item.get("instructions") or "—",
         ])
-    table = Table(rows, colWidths=[100, 70, 80, 70, 140])
+    table = Table(rows, colWidths=[95, 35, 65, 75, 65, 125])
     table.setStyle(
         TableStyle(
             [

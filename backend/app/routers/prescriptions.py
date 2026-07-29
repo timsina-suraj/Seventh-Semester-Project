@@ -101,8 +101,8 @@ async def download_prescription_pdf(
             "created_at": prescription.created_at.isoformat() if prescription.created_at else "",
             "items": [
                 {
-                    "medicine_name": item.medicine_name, "dosage": item.dosage, "frequency": item.frequency,
-                    "duration": item.duration, "instructions": item.instructions,
+                    "medicine_name": item.medicine_name, "quantity": item.quantity, "dosage": item.dosage,
+                    "frequency": item.frequency, "duration": item.duration, "instructions": item.instructions,
                 }
                 for item in prescription.items
             ],

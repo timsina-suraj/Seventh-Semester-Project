@@ -74,6 +74,7 @@ export default function Prescriptions() {
               <thead>
                 <tr>
                   <th>Medicine</th>
+                  <th>Qty</th>
                   <th>Dosage</th>
                   <th>Frequency</th>
                   <th>Duration</th>
@@ -84,6 +85,7 @@ export default function Prescriptions() {
                 {p.items.map((item) => (
                   <tr key={item.id}>
                     <td>{item.medicine_name}</td>
+                    <td>{item.quantity ?? "—"}</td>
                     <td>{item.dosage || "—"}</td>
                     <td>{item.frequency || "—"}</td>
                     <td>{item.duration || "—"}</td>

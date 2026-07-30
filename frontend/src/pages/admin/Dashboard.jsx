@@ -168,7 +168,7 @@ export default function AdminDashboard() {
         <div className="card">
           <div className="section-title">Appointments — Last 14 Days</div>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={stats.appointments_trend}>
+            <LineChart data={stats?.appointments_trend ?? []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" fontSize={11} />
               <YAxis fontSize={11} allowDecimals={false} />
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
         <div className="card">
           <div className="section-title">New Registrations — Last 30 Days</div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={stats.registrations_trend}>
+            <BarChart data={stats?.registrations_trend ?? []}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" fontSize={11} />
               <YAxis fontSize={11} allowDecimals={false} />

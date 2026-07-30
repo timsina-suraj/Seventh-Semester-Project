@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext.jsx";
+import { PASSWORD_RULES_HINT, validatePasswordStrength } from "../utils/passwordValidation.js";
 
 export default function ChangePassword() {
   const { user, logout } = useAuth();
@@ -19,8 +20,9 @@ export default function ChangePassword() {
     e.preventDefault();
     setError("");
 
-    if (newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
+    const strengthError = validatePasswordStrength(newPassword);
+    if (strengthError) {
+      setError(strengthError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -118,6 +120,7 @@ export default function ChangePassword() {
               autoFocus={isMustChange}
               autoComplete="new-password"
             />
+            <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{PASSWORD_RULES_HINT}</span>
           </div>
           <div className="form-group">
             <label>Confirm new password</label>

@@ -1,6 +1,40 @@
+import re
+
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.models.user import VALID_STAFF_ROLES
+
+_PASSWORD_LOWER = re.compile(r"[a-z]")
+_PASSWORD_UPPER = re.compile(r"[A-Z]")
+_PASSWORD_DIGIT = re.compile(r"[0-9]")
+_PASSWORD_SPECIAL = re.compile(r"[^A-Za-z0-9]")
+
+
+def _validate_password_strength(v: str) -> str:
+    """Requires at least one lowercase letter, one uppercase letter, one
+    digit, and one special (non-alphanumeric) character, on top of the
+    8-128 length constraint already enforced by each field's Field(...).
+    Reports every rule the password fails, not just the first one, so the
+    caller gets one actionable error instead of having to resubmit
+    repeatedly to discover each missing requirement in turn."""
+    missing = []
+    if not _PASSWORD_LOWER.search(v):
+        missing.append("a lowercase letter")
+    if not _PASSWORD_UPPER.search(v):
+        missing.append("an uppercase letter")
+    if not _PASSWORD_DIGIT.search(v):
+        missing.append("a digit")
+    if not _PASSWORD_SPECIAL.search(v):
+        missing.append("a special character")
+    if missing:
+        if len(missing) == 1:
+            detail = missing[0]
+        elif len(missing) == 2:
+            detail = f"{missing[0]} and {missing[1]}"
+        else:
+            detail = ", ".join(missing[:-1]) + f", and {missing[-1]}"
+        raise ValueError(f"Password must contain {detail}.")
+    return v
 
 
 class Token(BaseModel):
@@ -66,6 +100,11 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
 
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return _validate_password_strength(v)
+
 
 class SetInitialPasswordRequest(BaseModel):
     """For a user who just verified their first-login OTP and has no
@@ -73,6 +112,11 @@ class SetInitialPasswordRequest(BaseModel):
     identity."""
 
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return _validate_password_strength(v)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -83,6 +127,11 @@ class ResetPasswordWithOTPRequest(BaseModel):
     email: EmailStr
     otp: str
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return _validate_password_strength(v)
 
 
 class PreLoginRequest(BaseModel):

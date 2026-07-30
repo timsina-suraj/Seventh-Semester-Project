@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../api/endpoints";
+import { PASSWORD_RULES_HINT, validatePasswordStrength } from "../utils/passwordValidation.js";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
@@ -36,8 +37,9 @@ export default function ForgotPassword() {
     e.preventDefault();
     setResetError("");
 
-    if (newPassword.length < 8) {
-      setResetError("New password must be at least 8 characters.");
+    const strengthError = validatePasswordStrength(newPassword);
+    if (strengthError) {
+      setResetError(strengthError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -129,6 +131,7 @@ export default function ForgotPassword() {
                   required
                   autoComplete="new-password"
                 />
+                <span style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{PASSWORD_RULES_HINT}</span>
               </div>
               <div className="form-group">
                 <label>Confirm new password</label>

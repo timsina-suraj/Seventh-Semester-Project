@@ -47,6 +47,8 @@ async def upload_document(
     current_user: User = Depends(get_current_user),
 ):
     await _assert_can_access_patient(db, current_user, patient_id, patient_repo, doctor_repo)
+    if current_user.role == "patient" and category == "Lab Report":
+        raise ForbiddenError("Patients cannot add lab reports — lab results are entered by a lab technician")
     content = await file.read()
     return await service.upload(
         patient_id, category, file.filename or "upload", file.content_type or "", content, current_user.id

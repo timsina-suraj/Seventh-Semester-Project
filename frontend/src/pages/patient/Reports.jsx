@@ -4,6 +4,10 @@ import DocumentPreviewModal from "../../components/DocumentPreviewModal.jsx";
 import MedicalHistoryPanel from "../../components/MedicalHistoryPanel.jsx";
 import { DOCUMENT_CATEGORIES } from "../../constants/documents.js";
 
+// Patients don't perform lab tests themselves — that category is reserved for
+// lab technicians/doctors/etc. uploading on a patient's behalf.
+const PATIENT_UPLOAD_CATEGORIES = DOCUMENT_CATEGORIES.filter((c) => c !== "Lab Report");
+
 export default function Reports() {
   const [records, setRecords] = useState([]);
   const [prescriptions, setPrescriptions] = useState([]);
@@ -11,7 +15,7 @@ export default function Reports() {
   const [patientId, setPatientId] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [previewDoc, setPreviewDoc] = useState(null);
-  const [uploadCategory, setUploadCategory] = useState(DOCUMENT_CATEGORIES[0]);
+  const [uploadCategory, setUploadCategory] = useState(PATIENT_UPLOAD_CATEGORIES[0]);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadError, setUploadError] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -172,7 +176,7 @@ export default function Reports() {
           <div className="form-group">
             <label>Category</label>
             <select value={uploadCategory} onChange={(e) => setUploadCategory(e.target.value)}>
-              {DOCUMENT_CATEGORIES.map((c) => (
+              {PATIENT_UPLOAD_CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>

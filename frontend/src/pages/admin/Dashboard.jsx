@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Bar, BarChart, CartesianGrid, Line, LineChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
 import * as api from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthContext.jsx";
 
@@ -159,40 +163,32 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── System Status ── */}
+      {/* ── Activity Charts ── */}
       <div className="grid-2">
         <div className="card">
-          <div className="section-title">System Status</div>
-          <table>
-            <tbody>
-              {[
-                { label: "Database", status: "Operational", ok: true },
-                { label: "ML Models", status: "Loaded", ok: true },
-                { label: "API Server", status: "Running", ok: true },
-                { label: "Pharmacy Alerts", status: stats?.low_stock_items > 0 ? `${stats.low_stock_items} items low` : "All stocked", ok: !stats?.low_stock_items },
-                { label: "Dengue Alerts", status: stats?.open_alerts > 0 ? `${stats.open_alerts} open` : "Clear", ok: !stats?.open_alerts },
-              ].map(({ label, status, ok }) => (
-                <tr key={label}>
-                  <td style={{ padding: "8px 0", color: "var(--color-text-muted)", width: 160 }}>{label}</td>
-                  <td>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      fontWeight: 600, fontSize: 13,
-                      color: ok ? "#059669" : "#d97706",
-                    }}>
-                      <span style={{
-                        width: 8, height: 8, borderRadius: "50%",
-                        background: ok ? "#22c55e" : "#f59e0b",
-                        display: "inline-block",
-                        boxShadow: ok ? "0 0 0 2px #bbf7d0" : "0 0 0 2px #fde68a",
-                      }} />
-                      {status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="section-title">Appointments — Last 14 Days</div>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={stats.appointments_trend}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} allowDecimals={false} />
+              <Tooltip />
+              <Line type="monotone" dataKey="count" name="Appointments" stroke="#7c3aed" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="card">
+          <div className="section-title">New Registrations — Last 30 Days</div>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={stats.registrations_trend}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" fontSize={11} />
+              <YAxis fontSize={11} allowDecimals={false} />
+              <Tooltip />
+              <Bar dataKey="count" name="Registrations" fill="#2563eb" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="card">

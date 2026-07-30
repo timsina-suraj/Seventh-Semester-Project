@@ -244,6 +244,7 @@ if db.query(Patient).count() == 0:
             district=district,
             encrypted_emergency_contact=phone,
             allergies=rng.choice([None, None, None, "Penicillin", "Dust", "Peanuts"]),
+            created_at=ago(days=rng.randint(0, 45)),
         )
         db.add(p)
         db.flush()

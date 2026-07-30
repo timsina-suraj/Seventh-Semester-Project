@@ -35,7 +35,7 @@ export default function DoctorDashboard() {
     <div>
       <div className="page-header">
         <div>
-          <h1>Welcome, Dr. {user.fullName || user.email} 👨‍⚕️</h1>
+          <h1>Welcome, {user.fullName || user.email} 👨‍⚕️</h1>
         </div>
       </div>
 

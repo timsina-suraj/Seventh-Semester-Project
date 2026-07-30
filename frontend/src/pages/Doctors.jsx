@@ -21,8 +21,6 @@ export default function Doctors() {
           <h1>Doctors</h1>
           {isAdmin && (
             <div className="page-subtitle">
-              New doctor accounts are created from the <strong>Users</strong> page, so their login and
-              roster entry are always linked.
             </div>
           )}
         </div>

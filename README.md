@@ -30,7 +30,7 @@ pip install -r requirements.txt
 copy .env.example .env            # cp on Linux/Mac — then fill in JWT_SECRET_KEY / ENCRYPTION_KEY
 alembic upgrade head              # creates the schema (MediShield_db.db for SQLite)
 
-python -m scripts.bootstrap_admin --email admin@medishield.com --name "System Administrator"
+python -m scripts.bootstrap_admin --email admin@example.com --name "System Administrator"
 # — or, for a fully-populated demo dataset instead of one bare admin account:
 python seed.py                    # creates ~35 users across all 6 roles + realistic sample data
 

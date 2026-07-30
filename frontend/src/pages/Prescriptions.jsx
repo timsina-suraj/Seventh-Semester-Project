@@ -26,7 +26,6 @@ export default function Prescriptions() {
       <div className="page-header">
         <div>
           <h1>Prescriptions</h1>
-          <div className="page-subtitle">Every prescription issued, filterable by patient</div>
         </div>
       </div>
 

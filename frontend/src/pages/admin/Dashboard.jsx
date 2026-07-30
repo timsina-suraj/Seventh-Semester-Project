@@ -191,7 +191,7 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="card">
+        <div className="card" style={{ gridColumn: "1 / -1" }}>
           <div className="section-title">Hospital Highlights</div>
           {stats ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

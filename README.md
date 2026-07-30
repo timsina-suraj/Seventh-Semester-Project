@@ -45,6 +45,8 @@ for local dev point `SMTP_HOST`/`SMTP_PORT` in `.env` at
 [Mailpit](https://github.com/axllent/mailpit) (`./mailpit/mailpit.exe`, web
 UI at http://localhost:8025) or any local SMTP catcher.
 
+```mailpit.exe --database mailpitdata\mailpit.db``` with database that stores previous mails
+
 **Frontend** (from `frontend/`, in a second terminal):
 
 ```bash

@@ -1,6 +1,6 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import Date, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,16 +16,17 @@ from app.schemas.dashboard import HospitalStats, TrendPoint
 
 async def _daily_trend(db: AsyncSession, date_column, days: int) -> list[TrendPoint]:
     """One TrendPoint per day for the last `days` days (today inclusive),
-    zero-filled so every day appears even with no activity."""
-    start = date.today() - timedelta(days=days - 1)
-    day_expr = func.date(date_column)
+    zero-filled so every day appears even with no activity. Uses UTC time
+    to match the codebase's established convention for timestamps."""
+    start = datetime.now(timezone.utc).date() - timedelta(days=days - 1)
+    day_expr = func.date(date_column, type_=Date)
     stmt = (
         select(day_expr.label("day"), func.count().label("cnt"))
         .where(date_column >= start)
         .group_by(day_expr)
     )
     result = await db.execute(stmt)
-    counts = {row.day: row.cnt for row in result.all()}
+    counts = {row.day.isoformat(): row.cnt for row in result.all()}
     return [
         TrendPoint(
             date=(start + timedelta(days=i)).isoformat(),

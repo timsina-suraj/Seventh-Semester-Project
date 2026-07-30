@@ -4,6 +4,8 @@ import * as api from "../api/endpoints";
 import { useAuth } from "../auth/AuthContext.jsx";
 import useDebouncedValue from "../hooks/useDebouncedValue.js";
 import Modal from "../components/Modal.jsx";
+import SearchableSelect from "../components/SearchableSelect.jsx";
+import { DISTRICTS, PROVINCES } from "../constants/nepalLocations.js";
 
 const BLOOD_GROUPS = ["Unknown", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -70,12 +72,25 @@ function EditPatientModal({ patient, onClose, onSaved }) {
         </div>
         <div className="form-group">
           <label>District</label>
-          <input name="district" value={form.district} onChange={handleChange} required />
+          <SearchableSelect
+            name="district"
+            value={form.district}
+            onChange={handleChange}
+            options={DISTRICTS}
+            placeholder="Search all 77 districts..."
+            required
+          />
         </div>
         <div className="form-row">
           <div className="form-group">
             <label>Province</label>
-            <input name="province" value={form.province} onChange={handleChange} />
+            <SearchableSelect
+              name="province"
+              value={form.province}
+              onChange={handleChange}
+              options={PROVINCES}
+              placeholder="Search all 7 provinces..."
+            />
           </div>
           <div className="form-group">
             <label>Municipality</label>

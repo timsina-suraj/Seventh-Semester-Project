@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as api from "../../api/endpoints";
+import SearchableSelect from "../../components/SearchableSelect.jsx";
+import { DISTRICTS, PROVINCES } from "../../constants/nepalLocations.js";
 
 const EMPTY_FORM = {
   full_name: "",
@@ -107,18 +109,25 @@ export default function RegisterPatient() {
           </div>
           <div className="form-group">
             <label>District</label>
-            <input
+            <SearchableSelect
               name="district"
               value={form.district}
               onChange={handleChange}
+              options={DISTRICTS}
+              placeholder="Search all 77 districts..."
               required
-              placeholder="e.g. Kathmandu"
             />
           </div>
           <div className="form-row">
             <div className="form-group">
               <label>Province</label>
-              <input name="province" value={form.province} onChange={handleChange} placeholder="e.g. Bagmati" />
+              <SearchableSelect
+                name="province"
+                value={form.province}
+                onChange={handleChange}
+                options={PROVINCES}
+                placeholder="Search all 7 provinces..."
+              />
             </div>
             <div className="form-group">
               <label>Municipality</label>

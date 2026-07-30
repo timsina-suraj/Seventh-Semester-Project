@@ -296,6 +296,17 @@ async def test_pharmacy_create_and_low_stock_flag(client, world):
     assert resp.json()["is_low_stock"] is True
 
 
+# ── Dashboard stats ──────────────────────────────────────────────────────────────
+
+async def test_dashboard_stats_includes_zero_filled_trends(client, world):
+    resp = await client.get("/dashboard/stats", headers=world["admin"])
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert len(data["appointments_trend"]) == 14
+    assert len(data["registrations_trend"]) == 30
+    assert all("date" in p and "count" in p for p in data["appointments_trend"])
+
+
 # ── RBAC sweep for new Nurse / Lab Technician endpoints ─────────────────────────
 
 async def test_nurse_endpoints_reject_non_nurse_roles(client, world):

@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,7 +11,28 @@ from app.models.lab_test import LabTest
 from app.models.medical_record import MedicalRecord
 from app.models.medicine import Medicine
 from app.models.patient import Patient
-from app.schemas.dashboard import HospitalStats
+from app.schemas.dashboard import HospitalStats, TrendPoint
+
+
+async def _daily_trend(db: AsyncSession, date_column, days: int) -> list[TrendPoint]:
+    """One TrendPoint per day for the last `days` days (today inclusive),
+    zero-filled so every day appears even with no activity."""
+    start = date.today() - timedelta(days=days - 1)
+    day_expr = func.date(date_column)
+    stmt = (
+        select(day_expr.label("day"), func.count().label("cnt"))
+        .where(date_column >= start)
+        .group_by(day_expr)
+    )
+    result = await db.execute(stmt)
+    counts = {row.day: row.cnt for row in result.all()}
+    return [
+        TrendPoint(
+            date=(start + timedelta(days=i)).isoformat(),
+            count=counts.get((start + timedelta(days=i)).isoformat(), 0),
+        )
+        for i in range(days)
+    ]
 
 
 async def get_hospital_stats(db: AsyncSession) -> HospitalStats:
@@ -28,6 +51,9 @@ async def get_hospital_stats(db: AsyncSession) -> HospitalStats:
 
     open_alerts = await db.scalar(select(func.count()).select_from(Alert).where(Alert.status == "open"))
 
+    appointments_trend = await _daily_trend(db, Appointment.appointment_date, 14)
+    registrations_trend = await _daily_trend(db, Patient.created_at, 30)
+
     return HospitalStats(
         total_patients=total_patients or 0,
         dengue_cases_flagged=dengue_cases_flagged or 0,
@@ -36,4 +62,6 @@ async def get_hospital_stats(db: AsyncSession) -> HospitalStats:
         total_lab_results=total_lab_results or 0,
         low_stock_items=low_stock_items,
         open_alerts=open_alerts or 0,
+        appointments_trend=appointments_trend,
+        registrations_trend=registrations_trend,
     )

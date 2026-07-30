@@ -28,11 +28,14 @@ async def request_lab_test(
     payload: LabTestCreate,
     service: LabService = Depends(get_lab_service),
     doctor_repo: DoctorRepository = Depends(get_doctor_repository),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
     current_user: User = Depends(get_current_user),
 ):
     doctor = await doctor_repo.get_by_user_id(current_user.id)
     if not doctor:
         raise ForbiddenError("No doctor profile linked to this account")
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
     return await service.request_test(payload.patient_id, doctor.id, payload.test_name, current_user.id)
 
 

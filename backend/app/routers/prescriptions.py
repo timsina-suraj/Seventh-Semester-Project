@@ -6,9 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.database import get_db
-from app.dependencies import get_doctor_repository, get_notification_service, get_patient_repository, get_prescription_service
+from app.dependencies import (
+    get_doctor_repository,
+    get_medical_record_repository,
+    get_notification_service,
+    get_patient_repository,
+    get_prescription_service,
+)
 from app.models.doctor import Doctor
 from app.models.user import User
+from app.repositories.medical_record_repository import MedicalRecordRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.staff_repository import DoctorRepository
 from app.schemas.prescription import PrescriptionCreate, PrescriptionRead
@@ -31,11 +38,17 @@ async def create_prescription(
     service: PrescriptionService = Depends(get_prescription_service),
     notification_service: NotificationService = Depends(get_notification_service),
     doctor_repo: DoctorRepository = Depends(get_doctor_repository),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
+    medical_record_repo: MedicalRecordRepository = Depends(get_medical_record_repository),
     current_user: User = Depends(get_current_user),
 ):
     doctor = await doctor_repo.get_by_user_id(current_user.id)
     if not doctor:
         raise ForbiddenError("No doctor profile linked to this account")
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
+    if payload.medical_record_id is not None and not await medical_record_repo.get(payload.medical_record_id):
+        raise NotFoundError("Medical record not found")
     prescription = await service.create_with_items(
         payload.patient_id,
         doctor.id,

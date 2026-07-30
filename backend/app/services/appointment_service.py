@@ -34,6 +34,10 @@ class AppointmentService:
     ) -> Appointment:
         appointment_date = _as_naive_utc(appointment_date)
 
+        now = _as_naive_utc(datetime.now(timezone.utc))
+        if appointment_date < now:
+            raise ValidationError("appointment_date cannot be in the past")
+
         if not await self.availability_service.is_within_availability(doctor_id, appointment_date):
             raise ValidationError(
                 "Doctor is not available at this time — check GET /doctors/{id}/available-slots"

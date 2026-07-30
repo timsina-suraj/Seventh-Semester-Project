@@ -7,10 +7,12 @@ class PrescriptionItemCreate(BaseModel):
     medicine_name: str = Field(min_length=1, max_length=128)
     medicine_id: int | None = None
     quantity: int | None = Field(default=None, ge=1)
-    dosage: str | None = None
-    frequency: str | None = None
-    duration: str | None = None
-    instructions: str | None = None
+    dosage: str | None = Field(default=None, max_length=64)
+    frequency: str | None = Field(default=None, max_length=64)
+    duration: str | None = Field(default=None, max_length=64)
+    # instructions is a Text column (no declared DB limit); this app-level
+    # cap exists because "no limit" is the defect, not to match a DB number.
+    instructions: str | None = Field(default=None, max_length=500)
 
     @model_validator(mode="after")
     def validate_quantity_paired_with_medicine_id(self) -> "PrescriptionItemCreate":

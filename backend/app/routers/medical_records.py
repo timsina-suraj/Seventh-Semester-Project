@@ -6,10 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.database import get_db
-from app.dependencies import get_doctor_repository, get_medical_record_repository, get_patient_repository
+from app.dependencies import (
+    get_appointment_repository,
+    get_doctor_repository,
+    get_medical_record_repository,
+    get_patient_repository,
+)
 from app.models.doctor import Doctor
 from app.models.medical_record import MedicalRecord
 from app.models.user import User
+from app.repositories.appointment_repository import AppointmentRepository
 from app.repositories.medical_record_repository import MedicalRecordRepository
 from app.repositories.patient_repository import PatientRepository
 from app.repositories.staff_repository import DoctorRepository
@@ -49,8 +55,15 @@ async def create_medical_record(
     payload: MedicalRecordCreate,
     repo: MedicalRecordRepository = Depends(get_medical_record_repository),
     doctor_repo: DoctorRepository = Depends(get_doctor_repository),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
+    appointment_repo: AppointmentRepository = Depends(get_appointment_repository),
     current_user: User = Depends(get_current_user),
 ):
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
+    if payload.appointment_id is not None and not await appointment_repo.get(payload.appointment_id):
+        raise NotFoundError("Appointment not found")
+
     # A doctor's own doctor_id always wins over whatever the payload says —
     # otherwise a self-authored record with no linked appointment would be
     # invisible to list_for_doctor() (doctor-scoped visibility depends on
@@ -59,6 +72,8 @@ async def create_medical_record(
     if current_user.role == "doctor":
         doctor = await doctor_repo.get_by_user_id(current_user.id)
         doctor_id = doctor.id if doctor else None
+    elif payload.doctor_id is not None and not await doctor_repo.get(payload.doctor_id):
+        raise NotFoundError("Doctor not found")
 
     record = MedicalRecord(
         patient_id=payload.patient_id,

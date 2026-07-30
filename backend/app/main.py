@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 
 from app.config import settings
 from app.core.exceptions import AppError
@@ -44,6 +45,26 @@ app.add_middleware(
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
+    # Enabling SQLite's foreign_keys pragma (see database.py) means deleting
+    # a row that's still referenced elsewhere -- e.g. a patient who has lab
+    # tests, prescriptions, or vitals recorded, none of which cascade at the
+    # ORM level -- now raises this instead of silently leaving an orphaned
+    # row. Without this handler that would surface as a raw 500 with a
+    # SQLite stack trace; this turns it into a clean, actionable 409 instead.
+    return JSONResponse(
+        status_code=409,
+        content={
+            "detail": (
+                "This action conflicts with related records that still exist "
+                "(e.g. appointments, lab tests, prescriptions, or other linked "
+                "data) and cannot be completed until those are removed first."
+            )
+        },
+    )
 
 
 app.include_router(auth.router)

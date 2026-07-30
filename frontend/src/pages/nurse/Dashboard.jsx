@@ -299,7 +299,12 @@ export default function NurseDashboard() {
               </div>
               <div className="form-group">
                 <label>File</label>
-                <input type="file" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} required />
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  required
+                />
               </div>
               <button className="btn" type="submit" disabled={uploading} style={{ marginBottom: 14 }}>
                 {uploading ? "Uploading..." : "Upload"}

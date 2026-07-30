@@ -86,12 +86,12 @@ async def world(db_session, client):
 async def test_document_upload_list_download_and_rbac(client, world, tmp_path, monkeypatch):
     monkeypatch.setattr("app.services.document_service.settings.upload_dir", str(tmp_path))
 
-    files = {"file": ("report.txt", b"CBC results: normal", "text/plain")}
+    files = {"file": ("report.pdf", b"%PDF-1.4\nCBC results: normal", "application/pdf")}
     data = {"patient_id": str(world["patient_id"]), "category": "Lab Report"}
     resp = await client.post("/documents", headers=world["admin"], data=data, files=files)
     assert resp.status_code == 201, resp.text
     document = resp.json()
-    assert document["original_filename"] == "report.txt"
+    assert document["original_filename"] == "report.pdf"
 
     # Patient can list and download their own document.
     resp = await client.get("/documents", headers=world["patient"], params={"patient_id": world["patient_id"]})
@@ -100,7 +100,7 @@ async def test_document_upload_list_download_and_rbac(client, world, tmp_path, m
 
     resp = await client.get(f"/documents/{document['id']}/download", headers=world["patient"])
     assert resp.status_code == 200
-    assert resp.content == b"CBC results: normal"
+    assert resp.content == b"%PDF-1.4\nCBC results: normal"
 
     # A different patient cannot see or download it.
     resp = await client.get("/documents", headers=world["other_patient"], params={"patient_id": world["patient_id"]})

@@ -1,6 +1,6 @@
 from datetime import datetime, time
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.models.appointment import VALID_STATUSES
 
@@ -9,7 +9,10 @@ class AppointmentCreate(BaseModel):
     patient_id: int
     doctor_id: int
     appointment_date: datetime
-    reason: str | None = None
+    # DB column is Text (no declared limit at all) -- this app-level cap
+    # exists specifically because "no limit" is itself the defect, not
+    # because it needs to match some existing DB-side number.
+    reason: str | None = Field(default=None, max_length=500)
 
 
 class AppointmentUpdateStatus(BaseModel):

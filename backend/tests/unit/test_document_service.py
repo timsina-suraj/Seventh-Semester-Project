@@ -70,8 +70,8 @@ async def test_upload_rejects_empty_file(db_session):
 async def test_list_filtered_by_patient_and_category(db_session):
     patient, uploader = await _make_patient(db_session)
     service = DocumentService(DocumentRepository(db_session))
-    await service.upload(patient.id, "Lab Report", "a.txt", "text/plain", b"a", uploader.id)
-    await service.upload(patient.id, "Insurance", "b.txt", "text/plain", b"b", uploader.id)
+    await service.upload(patient.id, "Lab Report", "a.pdf", "application/pdf", b"%PDF-a", uploader.id)
+    await service.upload(patient.id, "Insurance", "b.pdf", "application/pdf", b"%PDF-b", uploader.id)
 
     all_docs = await service.list_filtered(patient.id)
     lab_only = await service.list_filtered(patient.id, "Lab Report")
@@ -84,7 +84,7 @@ async def test_list_filtered_by_patient_and_category(db_session):
 async def test_delete_removes_file_from_disk(db_session, tmp_path):
     patient, uploader = await _make_patient(db_session)
     service = DocumentService(DocumentRepository(db_session))
-    document = await service.upload(patient.id, "Other", "f.txt", "text/plain", b"content", uploader.id)
+    document = await service.upload(patient.id, "Other", "f.pdf", "application/pdf", b"%PDF-content", uploader.id)
     stored_path = tmp_path / document.stored_filename
     assert stored_path.exists()
 

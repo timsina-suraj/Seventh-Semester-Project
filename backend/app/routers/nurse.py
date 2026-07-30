@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.core.exceptions import NotFoundError
 from app.dependencies import get_nurse_repository, get_nurse_service, get_patient_repository
 from app.models.user import User
 from app.repositories.patient_repository import PatientRepository
@@ -31,9 +32,12 @@ async def record_vitals(
     payload: PatientVitalsCreate,
     service: NurseService = Depends(get_nurse_service),
     nurse_repo: NurseRepository = Depends(get_nurse_repository),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
     current_user: User = Depends(get_current_user),
 ):
     nurse_id = await _current_nurse_id(nurse_repo, current_user)
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
     data = payload.model_dump(exclude={"patient_id"})
     return await service.record_vitals(payload.patient_id, nurse_id, **data)
 
@@ -62,9 +66,12 @@ async def record_administration(
     payload: MedicineAdministrationCreate,
     service: NurseService = Depends(get_nurse_service),
     nurse_repo: NurseRepository = Depends(get_nurse_repository),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
     current_user: User = Depends(get_current_user),
 ):
     nurse_id = await _current_nurse_id(nurse_repo, current_user)
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
     return await service.record_administration(payload.patient_id, nurse_id, payload.medicine, payload.dose)
 
 

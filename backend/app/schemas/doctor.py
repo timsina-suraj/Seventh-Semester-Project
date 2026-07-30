@@ -6,12 +6,17 @@ from pydantic import BaseModel, Field, field_validator
 class DoctorUpdate(BaseModel):
     """Doctor accounts are created via POST /auth/register (StaffCreate) so
     the login and the roster row are always created together. This is for
-    admin edits to an existing doctor's roster info only."""
+    admin edits to an existing doctor's roster info only.
 
-    full_name: str | None = None
-    department: str | None = None
-    specialization: str | None = None
-    license_number: str | None = None
+    Fields are optional (a PATCH may touch just one), but every field that
+    IS provided still has to satisfy the same non-empty/length bounds the
+    underlying columns declare -- StaffCreate's required-ness doesn't carry
+    over automatically just because a field is Optional here."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=128)
+    department: str | None = Field(default=None, min_length=1, max_length=128)
+    specialization: str | None = Field(default=None, min_length=1, max_length=128)
+    license_number: str | None = Field(default=None, min_length=1, max_length=64)
 
 
 class DoctorRead(BaseModel):

@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+from app.models.alert import VALID_ALERT_STATUSES
 
 
 class AlertRead(BaseModel):
@@ -18,3 +20,10 @@ class AlertRead(BaseModel):
 
 class AlertUpdate(BaseModel):
     status: str
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str) -> str:
+        if v not in VALID_ALERT_STATUSES:
+            raise ValueError(f"status must be one of {VALID_ALERT_STATUSES}")
+        return v

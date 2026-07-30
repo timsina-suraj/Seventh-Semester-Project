@@ -39,15 +39,19 @@ async def create_appointment(
     db: AsyncSession = Depends(get_db),
     service: AppointmentService = Depends(get_appointment_service),
     notification_service: NotificationService = Depends(get_notification_service),
+    patient_repo: PatientRepository = Depends(get_patient_repository),
     current_user: User = Depends(get_current_user),
 ):
+    if not await patient_repo.get(payload.patient_id):
+        raise NotFoundError("Patient not found")
+    doctor = await db.get(Doctor, payload.doctor_id)
+    if not doctor:
+        raise NotFoundError("Doctor not found")
+
     appointment = await service.book(
         payload.patient_id, payload.doctor_id, payload.appointment_date, payload.reason, current_user.id
     )
-    doctor = await db.get(Doctor, payload.doctor_id)
-    await notification_service.notify_appointment_booked(
-        appointment, doctor.full_name if doctor else "your doctor", background_tasks
-    )
+    await notification_service.notify_appointment_booked(appointment, doctor.full_name, background_tasks)
     return appointment
 
 

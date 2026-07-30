@@ -1,6 +1,6 @@
 from datetime import date
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class MedicineCreate(BaseModel):
@@ -14,6 +14,16 @@ class MedicineCreate(BaseModel):
     unit: str = "units"
     stock_quantity: int = Field(ge=0, default=0)
     reorder_threshold: int = Field(ge=0, default=20)
+
+    @field_validator("expiry_date")
+    @classmethod
+    def validate_expiry_date(cls, v: date | None) -> date | None:
+        # Entering a medicine that's already expired as new stock is either
+        # a typo'd year or dead stock that shouldn't be added at all --
+        # either way it's not something a create-new-stock form should accept.
+        if v is not None and v <= date.today():
+            raise ValueError("expiry_date must be in the future")
+        return v
 
 
 class MedicineStockUpdate(BaseModel):

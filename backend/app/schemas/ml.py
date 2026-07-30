@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.ml.preprocessing import GENDER_MAP, JOINT_PAIN_MAP
 
 
 class RegressionMetrics(BaseModel):
@@ -40,6 +42,11 @@ class DistrictRiskPoint(BaseModel):
 
 
 class PatientDiagnosisRequest(BaseModel):
+    # Deliberately not the broader VALID_GENDERS ("Male","Female","Other")
+    # used for patient records: the trained model's GENDER_MAP only knows
+    # Male/Female, and silently maps anything else to 0 (Male) rather than
+    # erroring — so "Other" must be rejected here rather than accepted and
+    # then quietly mis-encoded.
     gender: str
     age: int = Field(ge=0, le=120)
     district: str = ""
@@ -60,7 +67,7 @@ class PatientDiagnosisRequest(BaseModel):
     igg: bool = False
     igm: bool = False
 
-    joint_pain: str = "No_Joint_Pain"  # No_Joint_Pain / Moderate / Severe
+    joint_pain: str = "No_Joint_Pain"  # one of JOINT_PAIN_MAP's keys
     headache: bool = False
     retro_orbital_pain: bool = False
     myalgia: bool = False
@@ -82,6 +89,20 @@ class PatientDiagnosisRequest(BaseModel):
     pregnancy: bool = False
 
     patient_id: int | None = None
+
+    @field_validator("gender")
+    @classmethod
+    def validate_gender(cls, v: str) -> str:
+        if v not in GENDER_MAP:
+            raise ValueError(f"gender must be one of {tuple(GENDER_MAP)}")
+        return v
+
+    @field_validator("joint_pain")
+    @classmethod
+    def validate_joint_pain(cls, v: str) -> str:
+        if v not in JOINT_PAIN_MAP:
+            raise ValueError(f"joint_pain must be one of {tuple(JOINT_PAIN_MAP)}")
+        return v
 
 
 class PatientDiagnosisResponse(BaseModel):
